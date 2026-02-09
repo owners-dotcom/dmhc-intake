@@ -1,5 +1,5 @@
 // ===== CONFIG =====
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbXXXX/exec";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzJv1qnr-lwWSShkkmrcU7jmvR8hFEVhh4E1G_w8SRsj_nVF6B-XFg49wxpscEBXVGn/exec";
 // Limit images to keep Apps Script happy:
 const MAX_PHOTOS = 8;
 const MAX_EDGE_PX = 1600;      // compress dimension
