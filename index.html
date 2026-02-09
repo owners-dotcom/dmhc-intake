@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Client Intake</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <meta name="color-scheme" content="light" />
+</head>
+
+<body>
+  <main class="shell">
+    <header class="top">
+      <div class="brand">
+        <div class="dot"></div>
+        <div class="brandText">
+          <div class="brandName">Danielle Marie Hair Co.</div>
+          <div class="brandSub">Client Intake</div>
+        </div>
+      </div>
+
+      <div class="progressWrap" aria-label="Progress">
+        <div class="progressMeta">
+          <span id="stepLabel">Step 1 of 5</span>
+          <span id="saveLabel" class="muted">Autosaved</span>
+        </div>
+        <div class="progressBar" role="progressbar" aria-valuemin="1" aria-valuemax="5" aria-valuenow="1">
+          <div id="progressFill" class="progressFill"></div>
+        </div>
+      </div>
+    </header>
+
+    <section class="card">
+      <form id="intakeForm" novalidate>
+
+        <!-- Honeypot (bots) -->
+        <input type="text" name="company" id="company" autocomplete="off" tabindex="-1" aria-hidden="true" class="hp">
+
+        <!-- STEP 1 -->
+        <div class="step isActive" data-step="1">
+          <h1>Let’s start with the basics.</h1>
+          <p class="sub">This helps us prep properly before you arrive.</p>
+
+          <div class="grid2">
+            <div class="field">
+              <label for="fullName">Full name</label>
+              <input id="fullName" name="fullName" type="text" placeholder="First + Last" autocomplete="name" required />
+              <div class="hint" data-hint="fullName"></div>
+            </div>
+
+            <div class="field">
+              <label for="phone">Phone</label>
+              <input id="phone" name="phone" type="tel" placeholder="(919) 555-1234" autocomplete="tel" required />
+              <div class="hint" data-hint="phone"></div>
+            </div>
+
+            <div class="field">
+              <label for="email">Email</label>
+              <input id="email" name="email" type="email" placeholder="you@email.com" autocomplete="email" required />
+              <div class="hint" data-hint="email"></div>
+            </div>
+
+            <div class="field">
+              <label for="preferredStylist">Preferred stylist (optional)</label>
+              <input id="preferredStylist" name="preferredStylist" type="text" placeholder="Cristina / Meghan / No preference" />
+              <div class="hint" data-hint="preferredStylist"></div>
+            </div>
+          </div>
+
+          <div class="nav">
+            <button type="button" class="btn ghost" data-action="back" disabled>Back</button>
+            <button type="button" class="btn" data-action="next">Next</button>
+          </div>
+        </div>
+
+        <!-- STEP 2 -->
+        <div class="step" data-step="2">
+          <h1>What are we doing today?</h1>
+          <p class="sub">Pick what fits best. You can add details below.</p>
+
+          <div class="chips" role="group" aria-label="Services">
+            <label class="chip"><input type="checkbox" name="services" value="Haircut" /> Haircut</label>
+            <label class="chip"><input type="checkbox" name="services" value="All-over color" /> All-over color</label>
+            <label class="chip"><input type="checkbox" name="services" value="Highlights/Balayage" /> Highlights / Balayage</label>
+            <label class="chip"><input type="checkbox" name="services" value="Color correction" /> Color correction</label>
+            <label class="chip"><input type="checkbox" name="services" value="Smoothing treatment" /> Smoothing treatment</label>
+            <label class="chip"><input type="checkbox" name="services" value="Other" /> Other</label>
+          </div>
+          <div class="hint" data-hint="services"></div>
+
+          <div class="field">
+            <label for="goals">In a sentence or two: what’s the goal?</label>
+            <textarea id="goals" name="goals" rows="4" placeholder="Example: brighter around my face, softer grow-out, keep it low maintenance." required></textarea>
+            <div class="hint" data-hint="goals"></div>
+          </div>
+
+          <div class="nav">
+            <button type="button" class="btn ghost" data-action="back">Back</button>
+            <button type="button" class="btn" data-action="next">Next</button>
+          </div>
+        </div>
+
+        <!-- STEP 3 -->
+        <div class="step" data-step="3">
+          <h1>Hair history (quick + important).</h1>
+          <p class="sub">This prevents surprises and protects your hair.</p>
+
+          <div class="grid2">
+            <div class="field">
+              <label for="lastColorDate">Last professional color date (approx.)</label>
+              <input id="lastColorDate" name="lastColorDate" type="text" placeholder="Example: 3 months ago" />
+              <div class="hint" data-hint="lastColorDate"></div>
+            </div>
+
+            <div class="field">
+              <label for="boxDye">Any box dye / at-home color in the last 24 months?</label>
+              <select id="boxDye" name="boxDye" required>
+                <option value="">Select one</option>
+                <option value="No">No</option>
+                <option value="Yes - permanent">Yes — permanent</option>
+                <option value="Yes - demi/semi">Yes — demi/semi</option>
+                <option value="Not sure">Not sure</option>
+              </select>
+              <div class="hint" data-hint="boxDye"></div>
+            </div>
+
+            <div class="field">
+              <label for="chemicalServices">Recent chemical services?</label>
+              <select id="chemicalServices" name="chemicalServices" required>
+                <option value="">Select one</option>
+                <option value="None">None</option>
+                <option value="Relaxer">Relaxer</option>
+                <option value="Perm">Perm</option>
+                <option value="Keratin/Smoothing">Keratin / smoothing</option>
+                <option value="Bleach/lightener">Bleach / lightener</option>
+                <option value="Other">Other</option>
+              </select>
+              <div class="hint" data-hint="chemicalServices"></div>
+            </div>
+
+            <div class="field">
+              <label for="sensitivities">Allergies / sensitivities (optional)</label>
+              <input id="sensitivities" name="sensitivities" type="text" placeholder="Example: fragrance sensitivity" />
+              <div class="hint" data-hint="sensitivities"></div>
+            </div>
+          </div>
+
+          <div class="nav">
+            <button type="button" class="btn ghost" data-action="back">Back</button>
+            <button type="button" class="btn" data-action="next">Next</button>
+          </div>
+        </div>
+
+        <!-- STEP 4 -->
+        <div class="step" data-step="4">
+          <h1>Upload photos.</h1>
+          <p class="sub">At least 2 is ideal: your current hair + 1–3 inspiration photos. (We compress automatically so uploads are fast.)</p>
+
+          <div class="upload">
+            <input id="photos" name="photos" type="file" accept="image/*" multiple />
+            <div class="uploadMeta">
+              <div class="muted">Accepted: JPG/PNG/HEIC (we convert on device when possible). Suggested: 2–8 photos.</div>
+              <div id="photoCount" class="muted">0 selected</div>
+            </div>
+            <div id="thumbs" class="thumbs"></div>
+            <div class="hint" data-hint="photos"></div>
+          </div>
+
+          <div class="nav">
+            <button type="button" class="btn ghost" data-action="back">Back</button>
+            <button type="button" class="btn" data-action="next">Next</button>
+          </div>
+        </div>
+
+        <!-- STEP 5 -->
+        <div class="step" data-step="5">
+          <h1>Confirm + submit.</h1>
+          <p class="sub">Front desk will receive your info + photo links together.</p>
+
+          <div class="review" id="review"></div>
+
+          <div class="nav">
+            <button type="button" class="btn ghost" data-action="back">Back</button>
+            <button type="submit" class="btn" id="submitBtn">Submit</button>
+          </div>
+
+          <div id="status" class="status" aria-live="polite"></div>
+        </div>
+
+      </form>
+    </section>
+
+    <footer class="foot muted">
+      <span>Secure upload • No spam • We respect your time</span>
+    </footer>
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>
