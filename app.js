@@ -1,6 +1,6 @@
 console.log("DMHC intake app.js loaded");
 // ===== CONFIG =====
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwHh3CBkL--JI6Z9smBa8rfuk3GVZeUygQWRwhV-1ieM4U8VfhGGJmu5vZzeoF0Q6mX/exec";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwQ9jmUDlTS46nRr0aNtC6wFIoSzl-6QnLg-rjwo06nnom_NEcaiTthBQ3zQ9GJ5sAI/exec";
 // Limit images to keep Apps Script happy:
 const MAX_PHOTOS = 8;
 const MAX_EDGE_PX = 1600;      // compress dimension
