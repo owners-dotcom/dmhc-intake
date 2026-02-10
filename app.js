@@ -1,3 +1,4 @@
+console.log("DMHC intake app.js loaded");
 // ===== CONFIG =====
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwHh3CBkL--JI6Z9smBa8rfuk3GVZeUygQWRwhV-1ieM4U8VfhGGJmu5vZzeoF0Q6mX/exec";
 // Limit images to keep Apps Script happy:
