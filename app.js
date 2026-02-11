@@ -82,11 +82,13 @@ function render() {
 
 function next() {
   State.step = Math.min(State.step + 1, Steps.length - 1);
+  syncHistory();
   render();
 }
 
 function back() {
   State.step = Math.max(State.step - 1, 0);
+  syncHistory();
   render();
 }
 
