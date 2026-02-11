@@ -141,21 +141,41 @@ window.addEventListener("popstate", (e) => {
    PROGRESS
 ============================== */
 
-function renderProgress() {
+function render() {
   const app = document.getElementById("app");
+  app.innerHTML = "";
 
-  const wrapper = document.createElement("div");
-  wrapper.className = "progress";
+  renderProgress();
 
-  const fill = document.createElement("div");
-  fill.className = "progress-fill";
+  const screen = document.createElement("div");
+  screen.className = "screen";
 
-  const progressDenom = Math.max(Steps.length - 2, 1);
-  const percent = (State.step / progressDenom) * 100;
-  fill.style.width = Math.min(percent, 100) + "%";
+  const current = Steps[State.step];
 
-  wrapper.appendChild(fill);
-  app.appendChild(wrapper);
+  let node = null;
+
+  switch (current) {
+    case "welcome": node = Welcome(); break;
+    case "basics": node = Basics(); break;
+    case "services": node = Services(); break;
+    case "history": node = History(); break;
+    case "photos": node = Photos(); break;
+    case "review": node = Review(); break;
+    case "loading": node = Loading(); break;
+    case "thankyou": node = ThankYou(); break;
+  }
+
+  if (node) screen.appendChild(node);
+  app.appendChild(screen);
+
+  // If the screen component exposes cleanup, call it on next render
+  if (node && typeof node.cleanup === "function") {
+    render._cleanup = node.cleanup;
+  }
+  if (typeof render._cleanup === "function" && current !== "loading") {
+    try { render._cleanup(); } catch(e) {}
+    render._cleanup = null;
+  }
 }
 
 /* ==============================
