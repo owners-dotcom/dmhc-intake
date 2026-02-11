@@ -330,99 +330,33 @@ function handleInspoPhoto(fileList) {
   render();
 }
 
-function Review() {
-  const div = document.createElement("div");
-
-  const name  = (State.data.name || "").trim() || "—";
-  const email = (State.data.email || "").trim() || "—";
-  const phone = (State.data.phone || "").trim() || "—";
-  const service   = State.data.service || "—";
-  const lastColor = (State.data.lastColor || "").trim() || "—";
-
-  const currentCount = Array.isArray(State.data.currentPhotos)
-    ? State.data.currentPhotos.length
-    : 0;
-
-  const inspoCount = State.data.inspoPhoto ? 1 : 0;
-
-  div.innerHTML = `
-    <h1>Review your details</h1>
-    <p class="muted">Quick check — you can go back and edit anything.</p>
-
-    <div class="review-card">
-
-      <div class="review-section">
-        <div class="review-title">Contact</div>
-
-        <div class="review-row">
-          <span class="review-label">Name</span>
-          <span class="review-value">${escapeHtml(name)}</span>
-        </div>
-
-        <div class="review-row">
-          <span class="review-label">Email</span>
-          <span class="review-value">${escapeHtml(email)}</span>
-        </div>
-
-        <div class="review-row">
-          <span class="review-label">Phone</span>
-          <span class="review-value">${escapeHtml(phone)}</span>
-        </div>
-      </div>
-
-      <div class="review-divider"></div>
-
-      <div class="review-section">
-        <div class="review-title">Service</div>
-        <div class="pill">${escapeHtml(service)}</div>
-      </div>
-
-      <div class="review-divider"></div>
-
-      <div class="review-section">
-        <div class="review-title">Hair history</div>
-        <div class="review-row">
-          <span class="review-label">Last professional color</span>
-          <span class="review-value">${escapeHtml(lastColor)}</span>
-        </div>
-      </div>
-
-      <div class="review-divider"></div>
-
-      <div class="review-section">
-        <div class="review-title">Photos</div>
-        <div class="pill subtle">Current hair: ${currentCount} file(s)</div>
-        <div class="pill subtle">Inspiration: ${inspoCount} file</div>
-      </div>
-
-    </div>
-
-    <div class="nav" style="margin-top:20px; display:flex; gap:12px;">
-      <button class="btn ghost" type="button" onclick="back()">Back</button>
-      <button class="btn primary" type="button" onclick="submitForm()">Submit</button>
-    </div>
-  `;
-
-  return div;
-}
-
 function Loading() {
   const div = document.createElement("div");
 
   div.innerHTML = `
     <h1>Submitting…</h1>
-    <div class="morph-loader" aria-hidden="true"></div>
-    <p class="muted" id="loadingQuote">${escapeHtml(LOADING_QUOTES[State.ui.loadingQuoteIdx])}</p>
+    <div class="loader-row" aria-live="polite">
+      <div class="dmhc-loader" aria-hidden="true"></div>
+      <p class="muted">Getting your consultation ready…</p>
+    </div>
+    <p class="micro-quote" id="microQuote">“Small details make the biggest difference.”</p>
   `;
 
-  // rotate quotes while loading
-  if (!State.ui.loadingTimer) {
-    State.ui.loadingTimer = setInterval(() => {
-      State.ui.loadingQuoteIdx = (State.ui.loadingQuoteIdx + 1) % LOADING_QUOTES.length;
-      const el = document.getElementById("loadingQuote");
-      if (el) el.textContent = LOADING_QUOTES[State.ui.loadingQuoteIdx];
-    }, 1400);
-  }
+  // soft rotating quotes
+  const quotes = [
+    "“Small details make the biggest difference.”",
+    "“We’re getting everything organized for your visit.”",
+    "“Almost done — thank you for taking the time.”",
+  ];
+  let i = 0;
+  const el = div.querySelector("#microQuote");
+  const t = setInterval(() => {
+    i = (i + 1) % quotes.length;
+    if (el) el.textContent = quotes[i];
+  }, 2200);
+
+  // stop interval if user leaves this screen
+  div.cleanup = () => clearInterval(t);
 
   return div;
 }
