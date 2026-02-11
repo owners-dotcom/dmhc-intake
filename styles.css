@@ -160,3 +160,37 @@ p {
 @media (max-width: 640px){
   .step{ padding: 22px 18px 18px; }
 }
+
+/* ===== In-step navigation ===== */
+.nav{
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.nav .btn{
+  appearance: none;
+  border: 0;
+  border-radius: 999px;
+  padding: 12px 18px;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.nav .btn-ghost{
+  background: transparent;
+  border: 1px solid rgba(0,0,0,.14);
+  color: #1f1f1f;
+}
+
+.nav .btn-primary{
+  background: #2f5b4a;
+  color: #ffffff;
+  padding: 14px 22px;
+}
+
+.nav .btn:active{
+  transform: translateY(1px);
+}
