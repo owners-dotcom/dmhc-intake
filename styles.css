@@ -287,3 +287,80 @@ p{
   0%,80%,100%{ transform:scale(0.8); opacity:.5; }
   40%{ transform:scale(1.2); opacity:1; }
 }
+
+.muted{opacity:.7}
+
+.field{margin-top:14px}
+.req{opacity:.7; font-weight:600}
+
+.form-error{
+  margin-top:14px;
+  padding:12px 14px;
+  border-radius:12px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.10);
+  font-weight:600;
+}
+
+.help{
+  margin-top:8px;
+  font-size:13px;
+  opacity:.65;
+}
+
+.review-card{
+  margin-top:18px;
+  padding:18px;
+  border-radius:20px;
+  background: rgba(255,255,255,0.03);
+  border:1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 14px 40px rgba(0,0,0,0.35);
+  backdrop-filter: blur(10px);
+}
+
+.review-section{display:grid; gap:10px}
+.review-title{font-weight:800; letter-spacing:.2px}
+.review-row{
+  display:flex;
+  justify-content:space-between;
+  gap:14px;
+  font-size:14px;
+}
+.review-label{opacity:.65}
+.review-value{font-weight:700; text-align:right}
+
+.review-divider{
+  height:1px;
+  background:rgba(255,255,255,0.10);
+  margin:16px 0;
+}
+
+.pill{
+  display:inline-block;
+  padding:9px 14px;
+  border-radius:999px;
+  background:rgba(255,255,255,0.09);
+  font-weight:700;
+  font-size:13px;
+  margin-right:10px;
+  margin-bottom:8px;
+}
+.pill.subtle{background:rgba(255,255,255,0.05)}
+
+.morph-loader{
+  width:56px;
+  height:56px;
+  margin:18px 0 10px;
+  border-radius:18px;
+  background: rgba(90,141,119,0.25);
+  border: 1px solid rgba(90,141,119,0.45);
+  box-shadow: 0 18px 50px rgba(0,0,0,0.40);
+  animation: morph 1.4s ease-in-out infinite;
+}
+
+@keyframes morph{
+  0%{ transform: rotate(0deg) scale(1); border-radius:18px; }
+  35%{ transform: rotate(45deg) scale(0.92); border-radius:26px; }
+  70%{ transform: rotate(90deg) scale(1.05); border-radius:14px; }
+  100%{ transform: rotate(180deg) scale(1); border-radius:18px; }
+}
