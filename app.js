@@ -366,21 +366,21 @@ function Loading() {
   div.innerHTML = `
     <h1>Submitting…</h1>
     <div class="loader-row" aria-live="polite">
-      <div class="dmhc-loader" aria-hidden="true"></div>
-      <p class="muted" id="loadingLine">${escapeHtml(LOADING_QUOTES[State.ui.loadingQuoteIdx] || LOADING_QUOTES[0])}</p>
+      <div class="morph-loader" aria-hidden="true"></div>
+      <p class="muted" id="loadingLine">${escapeHtml(LOADING_QUOTES[0])}</p>
     </div>
-    <p class="micro-quote" id="microQuote">“Small details make the biggest difference.”</p>
   `;
 
+  // Rotate lines slowly enough to read
   const lineEl = div.querySelector("#loadingLine");
   State.ui.loadingQuoteIdx = 0;
 
-  if (!State.ui.loadingTimer) {
-    State.ui.loadingTimer = setInterval(() => {
-      State.ui.loadingQuoteIdx = (State.ui.loadingQuoteIdx + 1) % LOADING_QUOTES.length;
-      if (lineEl) lineEl.textContent = LOADING_QUOTES[State.ui.loadingQuoteIdx];
-    }, 1800);
-  }
+  if (State.ui.loadingTimer) clearInterval(State.ui.loadingTimer);
+
+  State.ui.loadingTimer = setInterval(() => {
+    State.ui.loadingQuoteIdx = (State.ui.loadingQuoteIdx + 1) % LOADING_QUOTES.length;
+    if (lineEl) lineEl.textContent = LOADING_QUOTES[State.ui.loadingQuoteIdx];
+  }, 2400);
 
   return div;
 }
