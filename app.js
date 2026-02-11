@@ -91,6 +91,28 @@ function back() {
 }
 
 /* ==============================
+   HISTORY (browser back/forward)
+   - makes browser back go to prior step instead of leaving page
+============================== */
+
+function syncHistory(replace = false) {
+  const url = new URL(window.location.href);
+  url.searchParams.set("step", String(State.step));
+  const fn = replace ? history.replaceState : history.pushState;
+  fn.call(history, { step: State.step }, "", url.toString());
+}
+
+window.addEventListener("popstate", (e) => {
+  const step = (e.state && typeof e.state.step === "number")
+    ? e.state.step
+    : Number(new URL(window.location.href).searchParams.get("step") || 0);
+
+  State.step = Math.max(0, Math.min(step, Steps.length - 1));
+  render();
+});
+
+
+/* ==============================
    PROGRESS
 ============================== */
 
