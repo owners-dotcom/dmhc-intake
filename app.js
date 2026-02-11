@@ -147,14 +147,30 @@ function Services() {
   const div = document.createElement("div");
 
   div.innerHTML = `
-    <h1>What are we doing today?</h1>
-    <button class="button" onclick="selectService('Blonding')">Blonding</button>
-    <button class="button" onclick="selectService('All-Over Color')">All Over Color</button>
-    <button class="button" onclick="selectService('Haircut')">Haircut</button>
+    <h1>What brings you in?</h1>
+    <p>Select the option that feels closest. We’ll refine later.</p>
+
+    <div class="card-grid">
+      ${ServiceCard("Blonding", "Lighter, brighter, dimensional color")}
+      ${ServiceCard("Dimensional Color", "Lived-in depth or refresh")}
+      ${ServiceCard("All-Over / Gray Coverage", "Solid color or root coverage")}
+      ${ServiceCard("Haircut Only", "No color — shape & styling")}
+      ${ServiceCard("Not Sure", "Help me figure it out")}
+    </div>
   `;
 
   return div;
 }
+
+function ServiceCard(title, description) {
+  return `
+    <div class="card" onclick="selectService('${title}')">
+      <div class="card-title">${title}</div>
+      <div class="card-desc">${description}</div>
+    </div>
+  `;
+}
+
 
 function selectService(service) {
   State.data.service = service;
