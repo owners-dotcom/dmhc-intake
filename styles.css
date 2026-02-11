@@ -129,3 +129,10 @@ p {
   color: var(--muted);
   margin-top: 6px;
 }
+
+.container {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
