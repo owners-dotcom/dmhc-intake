@@ -136,3 +136,27 @@ p {
   padding: 40px 20px;
 }
 
+/* ===== Layout shell ===== */
+.app-shell{
+  min-height: 100vh;
+  padding: 28px 16px 56px;
+  background: #f5f1ea; /* warm light */
+}
+
+.container{
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+/* ===== Card ===== */
+.step{
+  background: #fbfaf7;
+  border: 1px solid rgba(0,0,0,.06);
+  border-radius: 16px;
+  padding: 28px 28px 22px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.06);
+}
+
+@media (max-width: 640px){
+  .step{ padding: 22px 18px 18px; }
+}
