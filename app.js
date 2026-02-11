@@ -26,7 +26,8 @@ const State = {
     error: "",
     splashTimer: null,
     loadingTimer: null,
-    loadingQuoteIdx: 0
+    loadingQuoteIdx: 0,
+    reviewError: ""
   }
 };
 
@@ -61,7 +62,6 @@ document.addEventListener("DOMContentLoaded", () => {
     State.step = 0;
   }
 
-  // Ensure browser back/forward stays inside the intake flow
   syncHistory(true);
 
   window.addEventListener("popstate", (e) => {
@@ -94,18 +94,14 @@ function syncHistory(replace = false) {
 
 function goToStep(stepIndex) {
   State.ui.error = "";
+  State.ui.reviewError = "";
   State.step = clamp(stepIndex, 0, Steps.length - 1);
   syncHistory();
   render();
 }
 
-function next() {
-  goToStep(State.step + 1);
-}
-
-function back() {
-  goToStep(State.step - 1);
-}
+function next() { goToStep(State.step + 1); }
+function back() { goToStep(State.step - 1); }
 
 /* ==============================
    RENDER
@@ -119,7 +115,6 @@ function render() {
   if (!app) return;
 
   app.innerHTML = "";
-
   renderProgress(app);
 
   const screen = document.createElement("div");
@@ -143,7 +138,6 @@ function render() {
   if (node) screen.appendChild(node);
   app.appendChild(screen);
 
-  // Post-render hooks (NO re-rendering while typing)
   if (current === "basics") bindBasicsInteractions();
   if (current === "photos") bindPhotoInteractions();
   if (current === "loading") startLoadingQuotes();
@@ -161,7 +155,6 @@ function renderProgress(app) {
   const fill = document.createElement("div");
   fill.className = "progress-fill";
 
-  // do not count splash, loading, thankyou as “progress steps”
   const progressSteps = ["welcome", "basics", "services", "history", "photos", "review"];
   const current = Steps[State.step];
   const idx = progressSteps.indexOf(current);
@@ -192,13 +185,10 @@ function Splash() {
 }
 
 function startSplashAutoAdvance() {
-  // Visible long enough to feel intentional, not a flash
+  // longer so it feels intentional
   State.ui.splashTimer = setTimeout(() => {
-    // Only advance if still on splash
-    if (Steps[State.step] === "splash") {
-      next();
-    }
-  }, 1400);
+    if (Steps[State.step] === "splash") next();
+  }, 2200);
 }
 
 function stopSplashTimer() {
@@ -280,7 +270,6 @@ function bindBasicsInteractions() {
 
   if (!inName || !inEmail || !inPhone || !btn) return;
 
-  // set initial values (without re-render)
   inName.value = State.data.name || "";
   inEmail.value = State.data.email || "";
   inPhone.value = State.data.phone || "";
@@ -302,7 +291,6 @@ function bindBasicsInteractions() {
     btn.disabled = !ok;
     btn.classList.toggle("disabled", !ok);
 
-    // clear error as they type
     State.ui.error = "";
     if (err) {
       err.textContent = "";
@@ -319,7 +307,7 @@ function bindBasicsInteractions() {
     const email = (State.data.email || "").trim();
     const phone = (State.data.phone || "").trim();
 
-    if (!name) return softError("Add your name so we know who to look for 😊");
+    if (!name) return softError("Add your name so we know who to look for.");
     if (!email) return softError("Add an email so we can follow up easily.");
     if (!isEmailish(email)) return softError("That email looks a little off — can you double-check it?");
     if (!phone || phone.length < 7) return softError("Add a phone number so we can text if needed.");
@@ -327,7 +315,6 @@ function bindBasicsInteractions() {
     next();
   });
 
-  // initial state
   updateUI();
 
   function softError(msg) {
@@ -395,7 +382,6 @@ function History() {
     </div>
   `;
 
-  // bind value post-render via timeout
   setTimeout(() => {
     const inLast = document.getElementById("inLastColor");
     if (inLast) inLast.value = State.data.lastColor || "";
@@ -470,7 +456,6 @@ function bindPhotoInteractions() {
   fileCurrent.addEventListener("change", async () => {
     State.data.currentPhotos = Array.from(fileCurrent.files || []);
     await renderThumbs(State.data.currentPhotos, thumbsCurrent);
-    // refresh header/meta without nuking inputs
     render();
   });
 
@@ -481,7 +466,6 @@ function bindPhotoInteractions() {
     render();
   });
 
-  // initial thumbs
   renderThumbs(State.data.currentPhotos || [], thumbsCurrent);
   renderThumbs(State.data.inspoPhoto ? [State.data.inspoPhoto] : [], thumbsInspo);
 }
@@ -528,13 +512,16 @@ function Review() {
       If anything looks off, tap <b>Back</b> — your answers stay saved.
     </div>
 
+    <div class="form-error ${State.ui.reviewError ? "" : "hidden"}" id="reviewError" role="alert">
+      ${escapeHtml(State.ui.reviewError || "")}
+    </div>
+
     <div class="nav">
       <button class="btn ghost" type="button" onclick="back()">Back</button>
       <button class="btn primary" type="button" onclick="submitForm()">Submit</button>
     </div>
   `;
 
-  // gentle fade-in
   setTimeout(() => {
     const h = document.getElementById("reviewHint");
     if (h) h.classList.add("show");
@@ -573,7 +560,6 @@ function Loading() {
 }
 
 function startLoadingQuotes() {
-  // rotate slowly enough to read
   State.ui.loadingQuoteIdx = 0;
 
   const tick = () => {
@@ -583,7 +569,8 @@ function startLoadingQuotes() {
     el.textContent = LOADING_QUOTES[State.ui.loadingQuoteIdx];
   };
 
-  State.ui.loadingTimer = setInterval(tick, 1700);
+  // slower so people can read
+  State.ui.loadingTimer = setInterval(tick, 2300);
 }
 
 function stopLoadingTimer() {
@@ -609,16 +596,27 @@ function ThankYou() {
 ============================== */
 
 function submitForm() {
-  // soft validation before submit
-  if (!(State.data.name || "").trim()) return alert("Please add your name.");
-  if (!isEmailish((State.data.email || "").trim())) return alert("Please add a valid email.");
-  if (!(State.data.phone || "").trim()) return alert("Please add your phone number.");
-  if (!(State.data.service || "").trim()) return alert("Please choose a service.");
+  // IMPORTANT: No system alerts. Soft guidance only.
+  // If someone deep-linked to review without basics, we don't hard-block.
+  // We still encourage completion before submit.
 
-  // Go to loading screen (and push history)
+  const missing = [];
+  if (!(State.data.name || "").trim()) missing.push("name");
+  if (!isEmailish((State.data.email || "").trim())) missing.push("email");
+  if (!(State.data.phone || "").trim()) missing.push("phone");
+  if (!(State.data.service || "").trim()) missing.push("service");
+
+  if (missing.length) {
+    State.ui.reviewError =
+      "Quick fix: please add your " +
+      missing.join(", ") +
+      " above (tap Back).";
+    render();
+    return;
+  }
+
   goToStep(Steps.indexOf("loading"));
 
-  // NOTE: this currently submits text data; photo upload wiring comes next
   const payload = {
     ...State.data,
     currentPhotos: (State.data.currentPhotos || []).map(f => ({ name: f.name, type: f.type, size: f.size })),
@@ -626,7 +624,7 @@ function submitForm() {
   };
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000);
+  const timeoutId = setTimeout(() => controller.abort(), 18000);
 
   fetch(APPS_SCRIPT_URL, {
     method: "POST",
@@ -640,7 +638,8 @@ function submitForm() {
     })
     .catch(() => {
       clearTimeout(timeoutId);
-      alert("That took longer than expected. Please tap Submit again.");
+      // no alert; return them to review with a calm message
+      State.ui.reviewError = "That took longer than expected — please tap Submit again.";
       goToStep(Steps.indexOf("review"));
     });
 }
