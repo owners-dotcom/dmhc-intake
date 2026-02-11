@@ -1,3 +1,4 @@
+// app.js
 console.log("DMHC Modular Intake Loaded");
 
 /* ==============================
@@ -16,8 +17,8 @@ const State = {
   data: {},
   ui: {
     error: "",
-    loadingQuoteIdx: 0,
-    loadingTimer: null
+    loadingTimer: null,
+    loadingQuoteIdx: 0
   }
 };
 
@@ -45,63 +46,36 @@ const LOADING_QUOTES = [
 
 document.addEventListener("DOMContentLoaded", () => {
   const stepParam = Number(new URL(window.location.href).searchParams.get("step") || 0);
-  if (!Number.isNaN(stepParam)) {
-    State.step = clamp(stepParam, 0, Steps.length - 1);
-  }
+  if (!Number.isNaN(stepParam)) State.step = clamp(stepParam, 0, Steps.length - 1);
+
   syncHistory(true); // replaceState
   render();
 });
 
 /* ==============================
-   RENDER ENGINE
+   HISTORY (browser back/forward)
 ============================== */
 
-function render() {
-  // stop loading quote timer if we left loading
-  if (Steps[State.step] !== "loading" && State.ui.loadingTimer) {
-    clearInterval(State.ui.loadingTimer);
-    State.ui.loadingTimer = null;
-  }
-
-  const app = document.getElementById("app");
-  app.innerHTML = "";
-
-  renderProgress();
-
-  const screen = document.createElement("div");
-  screen.className = "screen";
-
-  const current = Steps[State.step];
-
-  switch (current) {
-    case "welcome":
-      screen.appendChild(Welcome());
-      break;
-    case "basics":
-      screen.appendChild(Basics());
-      break;
-    case "services":
-      screen.appendChild(Services());
-      break;
-    case "history":
-      screen.appendChild(History());
-      break;
-    case "photos":
-      screen.appendChild(Photos());
-      break;
-    case "review":
-      screen.appendChild(Review());
-      break;
-    case "loading":
-      screen.appendChild(Loading());
-      break;
-    case "thankyou":
-      screen.appendChild(ThankYou());
-      break;
-  }
-
-  app.appendChild(screen);
+function syncHistory(replace = false) {
+  const url = new URL(window.location.href);
+  url.searchParams.set("step", String(State.step));
+  const fn = replace ? history.replaceState : history.pushState;
+  fn.call(history, { step: State.step }, "", url.toString());
 }
+
+window.addEventListener("popstate", (e) => {
+  const step =
+    (e.state && typeof e.state.step === "number")
+      ? e.state.step
+      : Number(new URL(window.location.href).searchParams.get("step") || 0);
+
+  State.step = clamp(step, 0, Steps.length - 1);
+  render();
+});
+
+/* ==============================
+   NAV
+============================== */
 
 function next() {
   State.ui.error = "";
@@ -118,34 +92,21 @@ function back() {
 }
 
 /* ==============================
-   HISTORY (browser back/forward)
-============================== */
-
-function syncHistory(replace = false) {
-  const url = new URL(window.location.href);
-  url.searchParams.set("step", String(State.step));
-  const fn = replace ? history.replaceState : history.pushState;
-  fn.call(history, { step: State.step }, "", url.toString());
-}
-
-window.addEventListener("popstate", (e) => {
-  const step = (e.state && typeof e.state.step === "number")
-    ? e.state.step
-    : Number(new URL(window.location.href).searchParams.get("step") || 0);
-
-  State.step = clamp(step, 0, Steps.length - 1);
-  render();
-});
-
-/* ==============================
-   PROGRESS
+   RENDER ENGINE
 ============================== */
 
 function render() {
-  const app = document.getElementById("app");
-  app.innerHTML = "";
+  // stop loading quote timer if we left loading
+  if (Steps[State.step] !== "loading" && State.ui.loadingTimer) {
+    clearInterval(State.ui.loadingTimer);
+    State.ui.loadingTimer = null;
+  }
 
-  renderProgress();
+  const app = document.getElementById("app");
+  if (!app) return;
+
+  app.innerHTML = "";
+  app.appendChild(renderProgress());
 
   const screen = document.createElement("div");
   screen.className = "screen";
@@ -153,7 +114,6 @@ function render() {
   const current = Steps[State.step];
 
   let node = null;
-
   switch (current) {
     case "welcome": node = Welcome(); break;
     case "basics": node = Basics(); break;
@@ -167,15 +127,26 @@ function render() {
 
   if (node) screen.appendChild(node);
   app.appendChild(screen);
+}
 
-  // If the screen component exposes cleanup, call it on next render
-  if (node && typeof node.cleanup === "function") {
-    render._cleanup = node.cleanup;
-  }
-  if (typeof render._cleanup === "function" && current !== "loading") {
-    try { render._cleanup(); } catch(e) {}
-    render._cleanup = null;
-  }
+/* ==============================
+   PROGRESS
+============================== */
+
+function renderProgress() {
+  const wrapper = document.createElement("div");
+  wrapper.className = "progress";
+
+  const fill = document.createElement("div");
+  fill.className = "progress-fill";
+
+  // Stop progress growth at "loading"
+  const progressDenom = Math.max(Steps.length - 2, 1);
+  const percent = (State.step / progressDenom) * 100;
+  fill.style.width = Math.min(percent, 100) + "%";
+
+  wrapper.appendChild(fill);
+  return wrapper;
 }
 
 /* ==============================
@@ -184,19 +155,16 @@ function render() {
 
 function Welcome() {
   const div = document.createElement("div");
-
   div.innerHTML = `
     <h1>Let’s start with the basics.</h1>
     <p class="muted">This takes about 2 minutes.</p>
     <button class="btn primary" type="button" onclick="next()">Begin</button>
   `;
-
   return div;
 }
 
 function Basics() {
   const div = document.createElement("div");
-
   div.innerHTML = `
     <h1>Your information</h1>
 
@@ -227,7 +195,6 @@ function Basics() {
       <button class="btn primary" type="button" onclick="onBasicsContinue()">Continue</button>
     </div>
   `;
-
   return div;
 }
 
@@ -240,7 +207,6 @@ function onBasicsContinue() {
   if (!email) return setError("Please enter your email to continue.");
   if (!phone) return setError("Please enter your phone number to continue.");
 
-  // light email sanity check (not strict)
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return setError("That email doesn’t look quite right — please check it.");
   }
@@ -250,7 +216,6 @@ function onBasicsContinue() {
 
 function Services() {
   const div = document.createElement("div");
-
   div.innerHTML = `
     <h1>What brings you in?</h1>
     <p class="muted">Select what feels closest. We’ll refine later.</p>
@@ -267,7 +232,6 @@ function Services() {
       <button class="btn ghost" type="button" onclick="back()">Back</button>
     </div>
   `;
-
   return div;
 }
 
@@ -288,7 +252,6 @@ function selectService(service) {
 
 function History() {
   const div = document.createElement("div");
-
   div.innerHTML = `
     <h1>Hair history</h1>
     <p class="muted">Quick info so we can plan correctly.</p>
@@ -305,49 +268,96 @@ function History() {
       <button class="btn primary" type="button" onclick="next()">Continue</button>
     </div>
   `;
-
   return div;
 }
 
 function Photos() {
   const div = document.createElement("div");
-
   div.innerHTML = `
     <h1>Photos</h1>
     <p class="muted">Add 1–3 photos of your current hair, plus 1 inspiration photo if you have it.</p>
 
     <div class="field">
       <label class="label">Current hair (1–3)</label>
-      <input class="input" type="file" accept="image/*" multiple
-        onchange="handleCurrentPhotos(this.files)" />
+      <input class="input" type="file" accept="image/*" multiple onchange="handleCurrentPhotos(this.files)" />
       <div class="help">${photoSummary("current")}</div>
     </div>
 
     <div class="field" style="margin-top:12px;">
       <label class="label">Inspiration (optional)</label>
-      <input class="input" type="file" accept="image/*"
-        onchange="handleInspoPhoto(this.files)" />
+      <input class="input" type="file" accept="image/*" onchange="handleInspoPhoto(this.files)" />
       <div class="help">${photoSummary("inspo")}</div>
     </div>
 
-    <div class="nav" style="margin-top:18px; display:flex; gap:12px; align-items:center;">
+    <div class="nav" style="margin-top:18px; display:flex; gap:12px;">
       <button class="btn ghost" type="button" onclick="back()">Back</button>
       <button class="btn primary" type="button" onclick="next()">Continue</button>
     </div>
   `;
-
   return div;
 }
 
 function handleCurrentPhotos(fileList) {
-  State.data.currentPhotos = Array.from(fileList || []);
+  const files = Array.from(fileList || []);
+  // Store metadata only for now (safe + lightweight)
+  State.data.currentPhotos = files.map(f => ({ name: f.name, type: f.type, size: f.size }));
   render();
 }
 
 function handleInspoPhoto(fileList) {
   const f = (fileList && fileList[0]) ? fileList[0] : null;
-  State.data.inspoPhoto = f || null;
+  State.data.inspoPhoto = f ? { name: f.name, type: f.type, size: f.size } : null;
   render();
+}
+
+function Review() {
+  const div = document.createElement("div");
+
+  const name = (State.data.name || "—");
+  const email = (State.data.email || "—");
+  const phone = (State.data.phone || "—");
+  const service = (State.data.service || "—");
+  const lastColor = (State.data.lastColor || "—");
+
+  const currentCount = Array.isArray(State.data.currentPhotos) ? State.data.currentPhotos.length : 0;
+  const inspoCount = State.data.inspoPhoto ? 1 : 0;
+
+  div.innerHTML = `
+    <h1>Review your details</h1>
+    <p class="muted">Quick check — you can go back and edit anything.</p>
+
+    <div class="review-card">
+      <div class="review-section">
+        <div class="review-title">Contact</div>
+        <div class="review-row"><span>Name</span><strong>${escapeHtml(name)}</strong></div>
+        <div class="review-row"><span>Email</span><strong>${escapeHtml(email)}</strong></div>
+        <div class="review-row"><span>Phone</span><strong>${escapeHtml(phone)}</strong></div>
+      </div>
+
+      <div class="review-section">
+        <div class="review-title">Service</div>
+        <div class="review-row"><span></span><strong>${escapeHtml(service)}</strong></div>
+      </div>
+
+      <div class="review-section">
+        <div class="review-title">Hair history</div>
+        <div class="review-row"><span>Last professional color</span><strong>${escapeHtml(lastColor)}</strong></div>
+      </div>
+
+      <div class="review-section">
+        <div class="review-title">Photos</div>
+        <div class="review-row"><span>Current hair</span><strong>${currentCount ? `${currentCount} file(s)` : "—"}</strong></div>
+        <div class="review-row"><span>Inspiration</span><strong>${inspoCount ? "1 file" : "—"}</strong></div>
+      </div>
+    </div>
+
+    <div class="nav" style="margin-top:18px; display:flex; gap:12px;">
+      <button class="btn ghost" type="button" onclick="back()">Back</button>
+      <button class="btn primary" type="button" onclick="submitForm()">Submit</button>
+    </div>
+  `;
+
+  return div;
 }
 
 function Loading() {
@@ -357,38 +367,30 @@ function Loading() {
     <h1>Submitting…</h1>
     <div class="loader-row" aria-live="polite">
       <div class="dmhc-loader" aria-hidden="true"></div>
-      <p class="muted">Getting your consultation ready…</p>
+      <p class="muted" id="loadingLine">${escapeHtml(LOADING_QUOTES[State.ui.loadingQuoteIdx] || LOADING_QUOTES[0])}</p>
     </div>
     <p class="micro-quote" id="microQuote">“Small details make the biggest difference.”</p>
   `;
 
-  // soft rotating quotes
-  const quotes = [
-    "“Small details make the biggest difference.”",
-    "“We’re getting everything organized for your visit.”",
-    "“Almost done — thank you for taking the time.”",
-  ];
-  let i = 0;
-  const el = div.querySelector("#microQuote");
-  const t = setInterval(() => {
-    i = (i + 1) % quotes.length;
-    if (el) el.textContent = quotes[i];
-  }, 2200);
+  const lineEl = div.querySelector("#loadingLine");
+  State.ui.loadingQuoteIdx = 0;
 
-  // stop interval if user leaves this screen
-  div.cleanup = () => clearInterval(t);
+  if (!State.ui.loadingTimer) {
+    State.ui.loadingTimer = setInterval(() => {
+      State.ui.loadingQuoteIdx = (State.ui.loadingQuoteIdx + 1) % LOADING_QUOTES.length;
+      if (lineEl) lineEl.textContent = LOADING_QUOTES[State.ui.loadingQuoteIdx];
+    }, 1800);
+  }
 
   return div;
 }
 
 function ThankYou() {
   const div = document.createElement("div");
-
   div.innerHTML = `
     <h1>Thank you.</h1>
     <p class="muted">We’ll review everything and reach out soon.</p>
   `;
-
   return div;
 }
 
@@ -398,27 +400,23 @@ function ThankYou() {
 
 function submitForm() {
   State.step = Steps.indexOf("loading");
+  syncHistory();
   render();
-
-  const controller = new AbortController();
-  const timeoutMs = 12000;
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   fetch(APPS_SCRIPT_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify(State.data),
-    signal: controller.signal
+    body: JSON.stringify(State.data)
   })
     .then(() => {
-      clearTimeout(timeoutId);
       State.step = Steps.indexOf("thankyou");
+      syncHistory();
       render();
     })
     .catch(() => {
-      clearTimeout(timeoutId);
-      alert("Submission is taking longer than expected. Please tap Submit again.");
+      alert("Submission failed. Please try again.");
       State.step = Steps.indexOf("review");
+      syncHistory();
       render();
     });
 }
