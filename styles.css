@@ -1,8 +1,9 @@
 :root{
-  --bg: #f6f4ef;
+  /* Lighter base palette (your code is light; if it still looks dark, it's Brave forcing dark mode) */
+  --bg: #f7f5f0;
   --card: #ffffff;
   --ink: #171717;
-  --muted: rgba(23,23,23,.68);
+  --muted: rgba(23,23,23,.66);
   --line: rgba(23,23,23,.10);
   --shadow: 0 10px 30px rgba(0,0,0,.06);
   --shadow2: 0 18px 50px rgba(0,0,0,.08);
@@ -12,6 +13,11 @@
   --brand: #2f5e4e;
   --brand-2: #244a3d;
   --focus: rgba(47,94,78,.18);
+
+  /* Loader speed controls */
+  --loader-slow: 3.6s;
+  --loader-mid: 2.4s;
+  --loader-fast: 1.35s;
 }
 
 *{ box-sizing:border-box; }
@@ -23,10 +29,6 @@ body{
   background: var(--bg);
   color: var(--ink);
 }
-
-/* ==============================
-   LAYOUT
-============================== */
 
 .app-shell{
   min-height: 100vh;
@@ -55,13 +57,44 @@ body{
 }
 
 @media (max-width:640px){
-  .screen{ padding:26px 18px 20px; }
+  .screen{ padding:26px 18px 20px; border-radius:16px; }
 }
 
-/* ==============================
-   SPLASH
-============================== */
+/* ===== Typography ===== */
+h1{
+  margin:0 0 12px;
+  font-size: clamp(28px, 3.6vw, 42px);
+  line-height:1.08;
+  letter-spacing:-.02em;
+}
 
+p{
+  margin:0 0 22px;
+  color:var(--muted);
+  font-size:16px;
+  line-height:1.55;
+}
+
+.muted{ opacity:.72; }
+
+/* ===== Progress ===== */
+.progress{
+  height:4px;
+  border-radius:999px;
+  background:rgba(0,0,0,.08);
+  overflow:hidden;
+  margin:0 0 18px;
+}
+
+.progress-fill{
+  height:100%;
+  width:0%;
+  background: linear-gradient(90deg, var(--brand), rgba(47,94,78,.55));
+  border-radius:999px;
+  transition: width .25s ease;
+}
+
+/* ===== Splash ===== */
 .center-splash{
   min-height: 320px;
   display:flex;
@@ -82,50 +115,7 @@ body{
   font-size:14px;
 }
 
-/* ==============================
-   TYPOGRAPHY
-============================== */
-
-h1{
-  margin:0 0 12px;
-  font-size: clamp(28px, 3.6vw, 42px);
-  line-height:1.08;
-  letter-spacing:-.02em;
-}
-
-p{
-  margin:0 0 22px;
-  color:var(--muted);
-  font-size:16px;
-  line-height:1.55;
-}
-
-.muted{ opacity:.72; }
-
-/* ==============================
-   PROGRESS
-============================== */
-
-.progress{
-  height:4px;
-  border-radius:999px;
-  background:rgba(0,0,0,.08);
-  overflow:hidden;
-  margin:0 0 18px;
-}
-
-.progress-fill{
-  height:100%;
-  width:0%;
-  background: linear-gradient(90deg, var(--brand), rgba(47,94,78,.55));
-  border-radius:999px;
-  transition: width .25s ease;
-}
-
-/* ==============================
-   INPUTS
-============================== */
-
+/* ===== Inputs ===== */
 .field{ margin-top:18px; }
 
 .label-row{
@@ -137,13 +127,14 @@ p{
 .label{
   font-size:13px;
   letter-spacing:.01em;
+  color: rgba(23,23,23,.86);
 }
 
 .req{ opacity:.6; }
 
 .check{
   font-size:14px;
-  font-weight:700;
+  font-weight:800;
   color:var(--brand);
   opacity:0;
   transform:scale(.7);
@@ -164,7 +155,7 @@ p{
   font-size:16px;
   margin-top:8px;
   outline:none;
-  transition:.15s ease;
+  transition: box-shadow .15s ease, border-color .15s ease;
 }
 
 .input:focus{
@@ -172,10 +163,19 @@ p{
   box-shadow:0 0 0 6px var(--focus);
 }
 
-/* ==============================
-   BUTTONS
-============================== */
+.form-error{
+  margin-top:16px;
+  padding:12px 14px;
+  border-radius:14px;
+  background: rgba(47,94,78,.08);
+  border: 1px solid rgba(47,94,78,.18);
+  font-weight:700;
+  color: rgba(23,23,23,.88);
+}
 
+.hidden{ display:none; }
+
+/* ===== Buttons ===== */
 .nav{
   margin-top:24px;
   display:flex;
@@ -183,7 +183,7 @@ p{
 }
 
 .actions{
-  margin-top:32px;
+  margin-top:34px; /* more breathing room under the subtext */
 }
 
 .btn{
@@ -191,7 +191,7 @@ p{
   border:none;
   border-radius:999px;
   padding:12px 18px;
-  font-weight:700;
+  font-weight:800;
   font-size:15px;
   cursor:pointer;
   transition:.15s ease;
@@ -203,9 +203,7 @@ p{
   box-shadow:0 10px 24px rgba(47,94,78,.18);
 }
 
-.btn.primary:hover{
-  background:var(--brand-2);
-}
+.btn.primary:hover{ background:var(--brand-2); }
 
 .btn.primary.disabled,
 .btn.primary:disabled{
@@ -217,16 +215,59 @@ p{
 .btn.ghost{
   background:rgba(0,0,0,.03);
   border:1px solid rgba(0,0,0,.08);
+  color: rgba(23,23,23,.86);
 }
 
 .btn.ghost:hover{
   background:rgba(0,0,0,.06);
 }
 
-/* ==============================
-   PHOTO BLOCK
-============================== */
+/* ===== Service cards (RESTORED – this is what broke) ===== */
+.card-grid{
+  display:grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-top: 14px;
+}
 
+@media (min-width: 700px){
+  .card-grid{
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+}
+
+.card{
+  text-align:left;
+  border-radius: 16px;
+  border: 1px solid rgba(0,0,0,.06);
+  background: rgba(255,255,255,.98);
+  box-shadow: 0 10px 24px rgba(0,0,0,.05);
+  padding: 16px 16px;
+  cursor:pointer;
+  transition: transform .12s ease, box-shadow .15s ease, border-color .15s ease;
+}
+
+.card:hover{
+  transform: translateY(-2px);
+  box-shadow: var(--shadow2);
+  border-color: rgba(47,94,78,.18);
+}
+
+.card-title{
+  font-weight: 900;
+  font-size: 16px;
+  margin-bottom: 6px;
+  letter-spacing: -0.01em;
+}
+
+.card-desc{
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+/* ===== Photos ===== */
 .photo-block{
   margin-top:24px;
   padding:18px;
@@ -242,13 +283,10 @@ p{
   margin-bottom:12px;
 }
 
-.photo-title{
-  font-weight:700;
-}
+.photo-title{ font-weight:800; }
+.photo-meta{ font-size:13px; }
 
-.file-hidden{
-  display:none;
-}
+.file-hidden{ display:none; }
 
 .thumbs{
   display:flex;
@@ -258,18 +296,15 @@ p{
 }
 
 .thumb{
-  width:72px;
-  height:72px;
+  width:74px;
+  height:74px;
   object-fit:cover;
   border-radius:12px;
   box-shadow:0 6px 18px rgba(0,0,0,.12);
   border:1px solid rgba(0,0,0,.05);
 }
 
-/* ==============================
-   REVIEW
-============================== */
-
+/* ===== Review ===== */
 .review-card{
   margin-top:22px;
   padding:22px;
@@ -282,11 +317,11 @@ p{
 .review-section{ display:grid; gap:10px; }
 
 .review-title{
-  font-weight:800;
-  font-size:14px;
+  font-weight:900;
+  font-size:12px;
   text-transform:uppercase;
-  letter-spacing:.08em;
-  opacity:.7;
+  letter-spacing:.10em;
+  opacity:.65;
 }
 
 .review-row{
@@ -299,7 +334,7 @@ p{
 .review-label{ opacity:.6; }
 
 .review-value{
-  font-weight:700;
+  font-weight:800;
   text-align:right;
 }
 
@@ -314,7 +349,7 @@ p{
   padding:8px 14px;
   border-radius:999px;
   background:rgba(47,94,78,.08);
-  font-weight:700;
+  font-weight:800;
   font-size:13px;
 }
 
@@ -322,15 +357,12 @@ p{
   margin-top:18px;
   font-size:14px;
   opacity:0;
-  transition:.3s ease;
+  transition:.35s ease;
 }
 
-.hint.show{ opacity:.7; }
+.hint.show{ opacity:.72; }
 
-/* ==============================
-   LOADING
-============================== */
-
+/* ===== Loading ===== */
 .loading-center{
   min-height:340px;
   display:flex;
@@ -341,7 +373,7 @@ p{
 }
 
 .loading-stack{
-  margin-top:22px;
+  margin-top:18px;
   display:flex;
   flex-direction:column;
   align-items:center;
@@ -353,61 +385,77 @@ p{
   min-height:22px;
 }
 
-/* ==============================
-   HAIR LOADER (MESMERIZING)
-============================== */
-
+/* ===== New mesmerizing “fold + strand” loader (variable speeds) =====
+   Class name stays .hair-loader because your JS uses it.
+*/
 .hair-loader{
-  width:64px;
-  height:64px;
-  border-radius:50%;
+  width:68px;
+  height:68px;
   position:relative;
-  animation: spin 3s linear infinite;
+  border-radius:18px;
+  transform: translateZ(0);
+  filter: drop-shadow(0 10px 22px rgba(0,0,0,.12));
+  animation: loaderBreath var(--loader-slow) ease-in-out infinite;
+  background: rgba(47,94,78,.07);
+  border: 1px solid rgba(47,94,78,.20);
+  overflow:hidden;
 }
 
 .hair-loader.big{
-  width:78px;
-  height:78px;
+  width:82px;
+  height:82px;
+  border-radius:22px;
 }
 
+/* Two “strands” that fold through each other at different speeds */
 .hair-loader::before,
 .hair-loader::after{
   content:"";
   position:absolute;
-  inset:0;
-  border-radius:50%;
-  border:3px solid transparent;
+  inset:-25%;
+  background: linear-gradient(135deg,
+    rgba(47,94,78,.0) 0%,
+    rgba(47,94,78,.45) 35%,
+    rgba(47,94,78,.10) 55%,
+    rgba(47,94,78,.0) 100%
+  );
+  transform-origin: 50% 50%;
+  mix-blend-mode: multiply;
 }
 
 .hair-loader::before{
-  border-top-color:var(--brand);
-  border-right-color:rgba(47,94,78,.35);
-  animation: swirl 1.4s ease-in-out infinite;
+  animation: strandA var(--loader-mid) ease-in-out infinite;
+  filter: blur(10px);
 }
 
 .hair-loader::after{
-  border-bottom-color:rgba(47,94,78,.6);
-  border-left-color:rgba(47,94,78,.2);
-  animation: swirl 2.2s ease-in-out infinite reverse;
+  animation: strandB var(--loader-fast) ease-in-out infinite;
+  filter: blur(14px);
+  opacity:.85;
 }
 
-@keyframes spin{
-  from{ transform:rotate(0deg); }
-  to{ transform:rotate(360deg); }
+/* The “fold” feel comes from rotating + scaling + shifting */
+@keyframes strandA{
+  0%   { transform: translate(-10%, -6%) rotate(0deg) scale(1.00); }
+  40%  { transform: translate(10%, 8%) rotate(120deg) scale(1.08); }
+  75%  { transform: translate(-6%, 10%) rotate(210deg) scale(.96); }
+  100% { transform: translate(-10%, -6%) rotate(360deg) scale(1.00); }
 }
 
-@keyframes swirl{
-  0%{ transform:scale(.9) rotate(0deg); }
-  50%{ transform:scale(1.08) rotate(180deg); }
-  100%{ transform:scale(.9) rotate(360deg); }
+@keyframes strandB{
+  0%   { transform: translate(12%, 10%) rotate(0deg) scale(.94); }
+  35%  { transform: translate(-10%, -8%) rotate(-140deg) scale(1.10); }
+  70%  { transform: translate(8%, -6%) rotate(-260deg) scale(.98); }
+  100% { transform: translate(12%, 10%) rotate(-360deg) scale(.94); }
 }
 
-/* ==============================
-   UTIL
-============================== */
+@keyframes loaderBreath{
+  0%   { transform: scale(1) rotate(0deg); border-radius: 18px; }
+  45%  { transform: scale(1.06) rotate(6deg); border-radius: 26px; }
+  100% { transform: scale(1) rotate(0deg); border-radius: 18px; }
+}
 
-.hidden{ display:none; }
-
+/* Reduce motion */
 @media (prefers-reduced-motion: reduce){
   *{ animation:none !important; transition:none !important; }
 }
