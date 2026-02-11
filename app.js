@@ -295,27 +295,71 @@ function handleInspoPhoto(fileList) {
 function Review() {
   const div = document.createElement("div");
 
-  const summary = {
-    name: State.data.name || "—",
-    email: State.data.email || "—",
-    phone: State.data.phone || "—",
-    service: State.data.service || "—",
-    lastColor: State.data.lastColor || "—",
-    currentPhotos: Array.isArray(State.data.currentPhotos) ? `${State.data.currentPhotos.length} file(s)` : "—",
-    inspoPhoto: State.data.inspoPhoto ? "1 file" : "—"
-  };
+  const name  = (State.data.name || "").trim() || "—";
+  const email = (State.data.email || "").trim() || "—";
+  const phone = (State.data.phone || "").trim() || "—";
+
+  const service   = State.data.service || "—";
+  const lastColor = (State.data.lastColor || "").trim() || "—";
+
+  const currentCount = Array.isArray(State.data.currentPhotos) ? State.data.currentPhotos.length : 0;
+  const inspoCount   = State.data.inspoPhoto ? 1 : 0;
 
   div.innerHTML = `
     <h1>Review your details</h1>
+    <p class="muted">Quick check — you can go back and edit anything.</p>
 
-    <div style="background:rgba(0,0,0,0.03); padding:12px; border-radius:12px; line-height:1.6;">
-      <div><strong>Name:</strong> ${escapeHtml(summary.name)}</div>
-      <div><strong>Email:</strong> ${escapeHtml(summary.email)}</div>
-      <div><strong>Phone:</strong> ${escapeHtml(summary.phone)}</div>
-      <div style="margin-top:10px;"><strong>Service:</strong> ${escapeHtml(summary.service)}</div>
-      <div><strong>Hair history:</strong> ${escapeHtml(summary.lastColor)}</div>
-      <div style="margin-top:10px;"><strong>Current hair photos:</strong> ${escapeHtml(summary.currentPhotos)}</div>
-      <div><strong>Inspiration photo:</strong> ${escapeHtml(summary.inspoPhoto)}</div>
+    <div class="review-card">
+      <div class="review-section">
+        <div class="review-title">Basics</div>
+
+        <div class="review-row">
+          <div class="review-label">Name</div>
+          <div class="review-value">${escapeHtml(name)}</div>
+        </div>
+
+        <div class="review-row">
+          <div class="review-label">Email</div>
+          <div class="review-value">${escapeHtml(email)}</div>
+        </div>
+
+        <div class="review-row">
+          <div class="review-label">Phone</div>
+          <div class="review-value">${escapeHtml(phone)}</div>
+        </div>
+      </div>
+
+      <div class="review-divider"></div>
+
+      <div class="review-section">
+        <div class="review-title">Service</div>
+
+        <div class="pill-row">
+          <span class="pill">${escapeHtml(service)}</span>
+        </div>
+      </div>
+
+      <div class="review-divider"></div>
+
+      <div class="review-section">
+        <div class="review-title">Hair history</div>
+
+        <div class="review-row">
+          <div class="review-label">Last professional color</div>
+          <div class="review-value">${escapeHtml(lastColor)}</div>
+        </div>
+      </div>
+
+      <div class="review-divider"></div>
+
+      <div class="review-section">
+        <div class="review-title">Photos</div>
+
+        <div class="pill-row">
+          <span class="pill subtle">Current hair: ${currentCount} file(s)</span>
+          <span class="pill subtle">Inspiration: ${inspoCount} file</span>
+        </div>
+      </div>
     </div>
 
     <div class="nav" style="margin-top:18px; display:flex; gap:12px; align-items:center;">
