@@ -448,12 +448,23 @@ function escapeAttr(str) {
 }
 
 function photoSummary(which) {
+  const trim = (s) => {
+    const max = 26;
+    const t = String(s || "");
+    return t.length > max ? t.slice(0, max - 1) + "…" : t;
+  };
+
   if (which === "current") {
-    const n = Array.isArray(State.data.currentPhotos) ? State.data.currentPhotos.length : 0;
-    return n ? `${n} selected` : "None selected";
+    const arr = Array.isArray(State.data.currentPhotos) ? State.data.currentPhotos : [];
+    if (!arr.length) return "None selected";
+    const names = arr.slice(0, 2).map(f => trim(f.name)).join(", ");
+    return arr.length <= 2 ? names : `${names} + ${arr.length - 2} more`;
   }
+
   if (which === "inspo") {
-    return State.data.inspoPhoto ? "1 selected" : "None selected";
+    const f = State.data.inspoPhoto;
+    return f ? trim(f.name) : "None selected";
   }
+
   return "";
 }
