@@ -4,7 +4,7 @@ console.log("DMHC Modular Intake Loaded");
    CONFIG
 ============================== */
 
-const APPS_SCRIPT_URL = "PASTE_YOUR_APPS_SCRIPT_URL_HERE";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwQ9jmUDlTS46nRr0aNtC6wFIoSzl-6QnLg-rjwo06nnom_NEcaiTthBQ3zQ9GJ5sAI/exec";
 
 /* ==============================
    APP STATE
