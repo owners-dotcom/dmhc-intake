@@ -99,7 +99,6 @@ function back() {
 
 /* ==============================
    HISTORY (browser back/forward)
-   - makes browser back go to prior step instead of leaving page
 ============================== */
 
 function syncHistory(replace = false) {
@@ -110,14 +109,14 @@ function syncHistory(replace = false) {
 }
 
 window.addEventListener("popstate", (e) => {
-  const step = (e.state && typeof e.state.step === "number")
-    ? e.state.step
-    : Number(new URL(window.location.href).searchParams.get("step") || 0);
+  const step =
+    e.state && typeof e.state.step === "number"
+      ? e.state.step
+      : Number(new URL(window.location.href).searchParams.get("step") || 0);
 
   State.step = Math.max(0, Math.min(step, Steps.length - 1));
   render();
 });
-
 
 /* ==============================
    PROGRESS
@@ -151,7 +150,10 @@ function Welcome() {
   div.innerHTML = `
     <h1>Let’s start with the basics.</h1>
     <p>This will take about 2 minutes.</p>
-    <button class="button" type="button" onclick="next()">Begin</button>
+
+    <div class="nav">
+      <button class="btn primary" type="button" onclick="next()">Begin</button>
+    </div>
   `;
 
   return div;
@@ -175,7 +177,10 @@ function Basics() {
       value="${escapeAttr(State.data.phone || "")}"
       oninput="State.data.phone=this.value" />
 
-    <button class="button" type="button" onclick="next()">Continue</button>
+    <div class="nav">
+      <button class="btn ghost" type="button" onclick="back()">Back</button>
+      <button class="btn primary" type="button" onclick="next()">Continue</button>
+    </div>
   `;
 
   return div;
@@ -229,13 +234,15 @@ function History() {
       value="${escapeAttr(State.data.lastColor || "")}"
       oninput="State.data.lastColor=this.value" />
 
-    <button class="button" type="button" onclick="next()">Continue</button>
+    <div class="nav">
+      <button class="btn ghost" type="button" onclick="back()">Back</button>
+      <button class="btn primary" type="button" onclick="next()">Continue</button>
+    </div>
   `;
 
   return div;
 }
 
-/* ====== NEW: Photos screen (Step exists in Steps array) ====== */
 function Photos() {
   const div = document.createElement("div");
 
@@ -251,9 +258,9 @@ function Photos() {
     <input class="input" type="file" accept="image/*"
       onchange="handleInspoPhoto(this.files)" />
 
-    <div class="nav" style="margin-top:18px; display:flex; gap:12px; align-items:center;">
+    <div class="nav">
       <button class="btn ghost" type="button" onclick="back()">Back</button>
-      <button class="button" type="button" onclick="next()">Continue</button>
+      <button class="btn primary" type="button" onclick="next()">Continue</button>
     </div>
   `;
 
@@ -261,7 +268,7 @@ function Photos() {
 }
 
 function handleCurrentPhotos(fileList) {
-  State.data.currentPhotos = Array.from(fileList || []).map(f => ({
+  State.data.currentPhotos = Array.from(fileList || []).map((f) => ({
     name: f.name,
     type: f.type,
     size: f.size
@@ -269,10 +276,9 @@ function handleCurrentPhotos(fileList) {
 }
 
 function handleInspoPhoto(fileList) {
-  const f = (fileList && fileList[0]) ? fileList[0] : null;
+  const f = fileList && fileList[0] ? fileList[0] : null;
   State.data.inspoPhoto = f ? { name: f.name, type: f.type, size: f.size } : null;
 }
-/* ====== END Photos screen ====== */
 
 function Review() {
   const div = document.createElement("div");
@@ -283,9 +289,9 @@ function Review() {
       JSON.stringify(State.data, null, 2)
     )}</pre>
 
-    <div class="nav" style="margin-top:18px; display:flex; gap:12px; align-items:center;">
+    <div class="nav">
       <button class="btn ghost" type="button" onclick="back()">Back</button>
-      <button class="button" type="button" onclick="submitForm()">Submit</button>
+      <button class="btn primary" type="button" onclick="submitForm()">Submit</button>
     </div>
   `;
 
@@ -320,6 +326,7 @@ function ThankYou() {
 
 function submitForm() {
   State.step = Steps.indexOf("loading");
+  syncHistory();
   render();
 
   fetch(APPS_SCRIPT_URL, {
@@ -329,11 +336,13 @@ function submitForm() {
   })
     .then(() => {
       State.step = Steps.indexOf("thankyou");
+      syncHistory();
       render();
     })
     .catch(() => {
       alert("Submission failed.");
       State.step = Steps.indexOf("review");
+      syncHistory();
       render();
     });
 }
