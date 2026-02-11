@@ -295,37 +295,37 @@ function handleInspoPhoto(fileList) {
 function Review() {
   const div = document.createElement("div");
 
-  const name  = (State.data.name || "").trim() || "—";
-  const email = (State.data.email || "").trim() || "—";
-  const phone = (State.data.phone || "").trim() || "—";
+  const name  = State.data.name  || "—";
+  const email = State.data.email || "—";
+  const phone = State.data.phone || "—";
+  const service   = State.data.service   || "—";
+  const lastColor = State.data.lastColor || "—";
 
-  const service   = State.data.service || "—";
-  const lastColor = (State.data.lastColor || "").trim() || "—";
+  const currentCount = Array.isArray(State.data.currentPhotos)
+    ? State.data.currentPhotos.length
+    : 0;
 
-  const currentCount = Array.isArray(State.data.currentPhotos) ? State.data.currentPhotos.length : 0;
-  const inspoCount   = State.data.inspoPhoto ? 1 : 0;
+  const inspoCount = State.data.inspoPhoto ? 1 : 0;
 
   div.innerHTML = `
     <h1>Review your details</h1>
-    <p class="muted">Quick check — you can go back and edit anything.</p>
+    <p class="muted">Quick check — you can edit anything.</p>
 
     <div class="review-card">
+
       <div class="review-section">
-        <div class="review-title">Basics</div>
-
+        <div class="review-title">Contact</div>
         <div class="review-row">
-          <div class="review-label">Name</div>
-          <div class="review-value">${escapeHtml(name)}</div>
+          <span class="review-label">Name</span>
+          <span class="review-value">${escapeHtml(name)}</span>
         </div>
-
         <div class="review-row">
-          <div class="review-label">Email</div>
-          <div class="review-value">${escapeHtml(email)}</div>
+          <span class="review-label">Email</span>
+          <span class="review-value">${escapeHtml(email)}</span>
         </div>
-
         <div class="review-row">
-          <div class="review-label">Phone</div>
-          <div class="review-value">${escapeHtml(phone)}</div>
+          <span class="review-label">Phone</span>
+          <span class="review-value">${escapeHtml(phone)}</span>
         </div>
       </div>
 
@@ -333,20 +333,16 @@ function Review() {
 
       <div class="review-section">
         <div class="review-title">Service</div>
-
-        <div class="pill-row">
-          <span class="pill">${escapeHtml(service)}</span>
-        </div>
+        <div class="pill">${escapeHtml(service)}</div>
       </div>
 
       <div class="review-divider"></div>
 
       <div class="review-section">
-        <div class="review-title">Hair history</div>
-
+        <div class="review-title">History</div>
         <div class="review-row">
-          <div class="review-label">Last professional color</div>
-          <div class="review-value">${escapeHtml(lastColor)}</div>
+          <span class="review-label">Last color</span>
+          <span class="review-value">${escapeHtml(lastColor)}</span>
         </div>
       </div>
 
@@ -354,15 +350,13 @@ function Review() {
 
       <div class="review-section">
         <div class="review-title">Photos</div>
-
-        <div class="pill-row">
-          <span class="pill subtle">Current hair: ${currentCount} file(s)</span>
-          <span class="pill subtle">Inspiration: ${inspoCount} file</span>
-        </div>
+        <div class="pill subtle">Current: ${currentCount}</div>
+        <div class="pill subtle">Inspiration: ${inspoCount}</div>
       </div>
+
     </div>
 
-    <div class="nav" style="margin-top:18px; display:flex; gap:12px; align-items:center;">
+    <div class="nav" style="margin-top:20px; display:flex; gap:12px;">
       <button class="btn ghost" type="button" onclick="back()">Back</button>
       <button class="btn primary" type="button" onclick="submitForm()">Submit</button>
     </div>
@@ -375,8 +369,15 @@ function Loading() {
   const div = document.createElement("div");
 
   div.innerHTML = `
-    <h1>Submitting…</h1>
-    <p>Please wait.</p>
+    <h1>Submitting</h1>
+
+    <div class="loading-dots">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+
+    <p class="muted">Sending your consultation details…</p>
   `;
 
   return div;
