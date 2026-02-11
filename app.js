@@ -147,15 +147,19 @@ function Services() {
   const div = document.createElement("div");
 
   div.innerHTML = `
-    <h1>What brings you in?</h1>
-    <p>Select the option that feels closest. We’ll refine later.</p>
+    <h1 class="h1">What brings you in?</h1>
+    <p class="sub">Select the option that feels closest. We’ll refine later.</p>
 
-    <div class="card-grid">
+    <div class="card-grid" role="list">
       ${ServiceCard("Blonding", "Lighter, brighter, dimensional color")}
       ${ServiceCard("Dimensional Color", "Lived-in depth or refresh")}
       ${ServiceCard("All-Over / Gray Coverage", "Solid color or root coverage")}
       ${ServiceCard("Haircut Only", "No color — shape & styling")}
       ${ServiceCard("Not Sure", "Help me figure it out")}
+    </div>
+
+    <div class="nav">
+      <button class="btn ghost" type="button" onclick="back()">Back</button>
     </div>
   `;
 
@@ -163,14 +167,15 @@ function Services() {
 }
 
 function ServiceCard(title, description) {
+  // Escapes quotes for safe inline onclick
+  const safe = String(title).replace(/"/g, "&quot;");
   return `
-    <div class="card" onclick="selectService('${title}')">
+    <button class="card" type="button" role="listitem" onclick="selectService(&quot;${safe}&quot;)">
       <div class="card-title">${title}</div>
       <div class="card-desc">${description}</div>
-    </div>
+    </button>
   `;
 }
-
 
 function selectService(service) {
   State.data.service = service;
