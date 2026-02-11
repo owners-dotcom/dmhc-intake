@@ -438,3 +438,119 @@ p{
   50%  { transform: translate(18%, 12%) scale(1.05); }
   100% { transform: translate(-18%, -12%) scale(0.95); }
 }
+
+/* ==============================
+   Splash Screen
+============================== */
+
+.splash{
+  text-align:center;
+  padding:60px 20px;
+  animation: fadeSplash 0.6s ease forwards;
+}
+
+@keyframes fadeSplash{
+  from{ opacity:0; transform:translateY(8px); }
+  to{ opacity:1; transform:translateY(0); }
+}
+
+/* ==============================
+   Disabled Buttons
+============================== */
+
+.btn:disabled{
+  opacity:.45;
+  cursor:not-allowed;
+  box-shadow:none;
+  transform:none;
+}
+
+/* ==============================
+   Review Reassurance Fade
+============================== */
+
+.fade-in{
+  margin-top:16px;
+  animation: fadeInSoft 0.8s ease forwards;
+  opacity:0;
+}
+
+@keyframes fadeInSoft{
+  to{ opacity:.72; }
+}
+
+/* ==============================
+   Centered Loading Layout
+============================== */
+
+.loading-center{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  min-height:280px;
+  text-align:center;
+}
+
+/* ==============================
+   Hair Strand Loader
+============================== */
+
+.hair-loader{
+  position:relative;
+  width:80px;
+  height:80px;
+  margin-bottom:18px;
+}
+
+.strand{
+  position:absolute;
+  width:6px;
+  height:80px;
+  background: linear-gradient(to bottom, #2f5e4e, #67aa93);
+  border-radius:999px;
+  left:50%;
+  transform-origin:center bottom;
+  animation: sway 1.8s ease-in-out infinite;
+}
+
+.s1{ transform:translateX(-50%) rotate(-12deg); animation-delay:0s; }
+.s2{ transform:translateX(-50%) rotate(0deg); animation-delay:.2s; }
+.s3{ transform:translateX(-50%) rotate(12deg); animation-delay:.4s; }
+
+@keyframes sway{
+  0%{ transform:translateX(-50%) rotate(-12deg); }
+  50%{ transform:translateX(-50%) rotate(12deg); }
+  100%{ transform:translateX(-50%) rotate(-12deg); }
+}
+
+/* ==============================
+   Loading Line
+============================== */
+
+.loading-line{
+  font-size:15px;
+  font-weight:600;
+  opacity:.75;
+  margin:0;
+}
+
+/* ==============================
+   Thumbnails (you already added, but keeping unified)
+============================== */
+
+.thumb-row{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:10px;
+}
+
+.thumb{
+  width:68px;
+  height:68px;
+  border-radius:14px;
+  object-fit:cover;
+  border: 1px solid rgba(0,0,0,.08);
+  box-shadow: 0 10px 24px rgba(0,0,0,.08);
+}
