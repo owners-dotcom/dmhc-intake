@@ -213,29 +213,50 @@ p{
   *{ transition:none !important; }
 }
 
+/* ===== Review ===== */
 .review-card{
-  margin-top:18px;
-  padding:18px;
-  border-radius:20px;
-  background: rgba(255,255,255,0.03);
-  border:1px solid rgba(255,255,255,0.06);
-  backdrop-filter: blur(8px);
+  margin-top: 18px;
+  padding: 18px;
+  border-radius: 18px;
+  background: #fff;
+  border: 1px solid rgba(0,0,0,.06);
+  box-shadow: var(--shadow);
 }
 
 .review-section{
-  display:grid;
-  gap:10px;
+  display: grid;
+  gap: 10px;
+  padding: 14px 0;
+}
+
+.review-section + .review-section{
+  border-top: 1px solid rgba(0,0,0,.06);
 }
 
 .review-title{
-  font-weight:700;
-  opacity:.9;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  margin-bottom: 2px;
 }
 
 .review-row{
-  display:flex;
-  justify-content:space-between;
-  font-size:14px;
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  font-size: 14px;
+}
+
+.review-row span{
+  color: var(--muted);
+}
+
+.review-row strong{
+  font-weight: 800;
+  text-align: right;
+  max-width: 55%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .review-label{
