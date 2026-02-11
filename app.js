@@ -4,7 +4,8 @@ console.log("DMHC Modular Intake Loaded");
    CONFIG
 ============================== */
 
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwQ9jmUDlTS46nRr0aNtC6wFIoSzl-6QnLg-rjwo06nnom_NEcaiTthBQ3zQ9GJ5sAI/exec";
+const APPS_SCRIPT_URL =
+  "https://script.google.com/macros/s/AKfycbwQ9jmUDlTS46nRr0aNtC6wFIoSzl-6QnLg-rjwo06nnom_NEcaiTthBQ3zQ9GJ5sAI/exec";
 
 /* ==============================
    APP STATE
@@ -62,6 +63,9 @@ function render() {
     case "history":
       screen.appendChild(History());
       break;
+    case "photos":
+      screen.appendChild(Photos());
+      break;
     case "review":
       screen.appendChild(Review());
       break;
@@ -77,12 +81,12 @@ function render() {
 }
 
 function next() {
-  State.step++;
+  State.step = Math.min(State.step + 1, Steps.length - 1);
   render();
 }
 
 function back() {
-  State.step--;
+  State.step = Math.max(State.step - 1, 0);
   render();
 }
 
@@ -99,8 +103,10 @@ function renderProgress() {
   const fill = document.createElement("div");
   fill.className = "progress-fill";
 
-  const percent = (State.step / (Steps.length - 2)) * 100;
-  fill.style.width = percent + "%";
+  // Stops progress at "loading" (thankyou shouldn't increase %)
+  const progressDenom = Math.max(Steps.length - 2, 1);
+  const percent = (State.step / progressDenom) * 100;
+  fill.style.width = Math.min(percent, 100) + "%";
 
   wrapper.appendChild(fill);
   app.appendChild(wrapper);
@@ -116,7 +122,7 @@ function Welcome() {
   div.innerHTML = `
     <h1>Let’s start with the basics.</h1>
     <p>This will take about 2 minutes.</p>
-    <button class="button" onclick="next()">Begin</button>
+    <button class="button" type="button" onclick="next()">Begin</button>
   `;
 
   return div;
@@ -129,15 +135,18 @@ function Basics() {
     <h1>Your information</h1>
 
     <input class="input" placeholder="Full name"
+      value="${escapeAttr(State.data.name || "")}"
       oninput="State.data.name=this.value" />
 
     <input class="input" placeholder="Email"
+      value="${escapeAttr(State.data.email || "")}"
       oninput="State.data.email=this.value" />
 
     <input class="input" placeholder="Phone"
+      value="${escapeAttr(State.data.phone || "")}"
       oninput="State.data.phone=this.value" />
 
-    <button class="button" onclick="next()">Continue</button>
+    <button class="button" type="button" onclick="next()">Continue</button>
   `;
 
   return div;
@@ -147,8 +156,8 @@ function Services() {
   const div = document.createElement("div");
 
   div.innerHTML = `
-    <h1 class="h1">What brings you in?</h1>
-    <p class="sub">Select the option that feels closest. We’ll refine later.</p>
+    <h1>What brings you in?</h1>
+    <p>Select the option that feels closest. We’ll refine later.</p>
 
     <div class="card-grid" role="list">
       ${ServiceCard("Blonding", "Lighter, brighter, dimensional color")}
@@ -167,12 +176,11 @@ function Services() {
 }
 
 function ServiceCard(title, description) {
-  // Escapes quotes for safe inline onclick
-  const safe = String(title).replace(/"/g, "&quot;");
+  const safe = escapeAttr(String(title));
   return `
-    <button class="card" type="button" role="listitem" onclick="selectService(&quot;${safe}&quot;)">
-      <div class="card-title">${title}</div>
-      <div class="card-desc">${description}</div>
+    <button class="card" type="button" role="listitem" onclick="selectService('${safe}')">
+      <div class="card-title">${escapeHtml(title)}</div>
+      <div class="card-desc">${escapeHtml(description)}</div>
     </button>
   `;
 }
@@ -188,22 +196,68 @@ function History() {
   div.innerHTML = `
     <h1>Hair history</h1>
 
-    <input class="input" placeholder="Last professional color date"
+    <input class="input" placeholder="Last professional color date (approx.)"
+      value="${escapeAttr(State.data.lastColor || "")}"
       oninput="State.data.lastColor=this.value" />
 
-    <button class="button" onclick="next()">Continue</button>
+    <button class="button" type="button" onclick="next()">Continue</button>
   `;
 
   return div;
 }
+
+/* ====== NEW: Photos screen (Step exists in Steps array) ====== */
+function Photos() {
+  const div = document.createElement("div");
+
+  div.innerHTML = `
+    <h1>Photos</h1>
+    <p>Add 1–3 photos of your current hair, plus 1 inspiration photo if you have it.</p>
+
+    <label class="label">Current hair (1–3)</label>
+    <input class="input" type="file" accept="image/*" multiple
+      onchange="handleCurrentPhotos(this.files)" />
+
+    <label class="label" style="margin-top:14px;">Inspiration (optional)</label>
+    <input class="input" type="file" accept="image/*"
+      onchange="handleInspoPhoto(this.files)" />
+
+    <div class="nav" style="margin-top:18px; display:flex; gap:12px; align-items:center;">
+      <button class="btn ghost" type="button" onclick="back()">Back</button>
+      <button class="button" type="button" onclick="next()">Continue</button>
+    </div>
+  `;
+
+  return div;
+}
+
+function handleCurrentPhotos(fileList) {
+  State.data.currentPhotos = Array.from(fileList || []).map(f => ({
+    name: f.name,
+    type: f.type,
+    size: f.size
+  }));
+}
+
+function handleInspoPhoto(fileList) {
+  const f = (fileList && fileList[0]) ? fileList[0] : null;
+  State.data.inspoPhoto = f ? { name: f.name, type: f.type, size: f.size } : null;
+}
+/* ====== END Photos screen ====== */
 
 function Review() {
   const div = document.createElement("div");
 
   div.innerHTML = `
     <h1>Review your details</h1>
-    <p>${JSON.stringify(State.data, null, 2)}</p>
-    <button class="button" onclick="submitForm()">Submit</button>
+    <pre style="white-space:pre-wrap; background:rgba(0,0,0,0.03); padding:12px; border-radius:10px;">${escapeHtml(
+      JSON.stringify(State.data, null, 2)
+    )}</pre>
+
+    <div class="nav" style="margin-top:18px; display:flex; gap:12px; align-items:center;">
+      <button class="btn ghost" type="button" onclick="back()">Back</button>
+      <button class="button" type="button" onclick="submitForm()">Submit</button>
+    </div>
   `;
 
   return div;
@@ -213,7 +267,7 @@ function Loading() {
   const div = document.createElement("div");
 
   div.innerHTML = `
-    <h1>Submitting...</h1>
+    <h1>Submitting…</h1>
     <p>Please wait.</p>
   `;
 
@@ -241,13 +295,34 @@ function submitForm() {
 
   fetch(APPS_SCRIPT_URL, {
     method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify(State.data)
   })
-  .then(() => {
-    State.step = Steps.indexOf("thankyou");
-    render();
-  })
-  .catch(() => {
-    alert("Submission failed.");
-  });
+    .then(() => {
+      State.step = Steps.indexOf("thankyou");
+      render();
+    })
+    .catch(() => {
+      alert("Submission failed.");
+      State.step = Steps.indexOf("review");
+      render();
+    });
+}
+
+/* ==============================
+   HELPERS
+============================== */
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function escapeAttr(str) {
+  // safe for attribute or single-quoted inline onclick
+  return escapeHtml(str).replace(/`/g, "&#096;");
 }
