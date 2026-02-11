@@ -364,3 +364,56 @@ p{
   70%{ transform: rotate(90deg) scale(1.05); border-radius:14px; }
   100%{ transform: rotate(180deg) scale(1); border-radius:18px; }
 }
+
+.loader-row{
+  display:flex;
+  gap:14px;
+  align-items:center;
+  margin-top:12px;
+}
+
+.muted{
+  opacity:.72;
+  margin:0;
+}
+
+.micro-quote{
+  margin-top:14px;
+  opacity:.55;
+  font-size:14px;
+  line-height:1.4;
+}
+
+/* “quiet Google-ish” morph loader */
+.dmhc-loader{
+  width:44px;
+  height:44px;
+  border-radius:14px;
+  background: rgba(103, 170, 147, 0.22);
+  position:relative;
+  overflow:hidden;
+  transform: translateZ(0);
+}
+
+.dmhc-loader::before{
+  content:"";
+  position:absolute;
+  inset:-40%;
+  background: rgba(103, 170, 147, 0.45);
+  filter: blur(18px);
+  animation: dmhcShift 1.8s ease-in-out infinite;
+}
+
+.dmhc-loader::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:14px;
+}
+
+@keyframes dmhcShift{
+  0%   { transform: translate(-18%, -12%) scale(0.95); }
+  50%  { transform: translate(18%, 12%) scale(1.05); }
+  100% { transform: translate(-18%, -12%) scale(0.95); }
+}
