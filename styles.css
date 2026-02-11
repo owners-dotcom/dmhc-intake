@@ -5,6 +5,14 @@
   --accent: #4F3620;
   --muted: #6E6A65;
 }
+
+:root {
+  --bg: #F6F3EE;
+  --card: #FFFFFF;
+  --border: #E4DDD3;
+  --accent: #4F3620;
+  --muted: #6E6A65;
+}
 :root {
   --ink: #1f1f1f;
   --muted: #6f6f6f;
