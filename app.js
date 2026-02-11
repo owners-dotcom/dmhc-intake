@@ -398,36 +398,27 @@ function ThankYou() {
 
 function submitForm() {
   State.step = Steps.indexOf("loading");
-  syncHistory();
   render();
 
-  // NOTE: right now you are NOT uploading image bytes (just sending fields).
-  // We'll wire real photo upload next (compression + base64) once UI is locked.
-
-  const payload = {
-    ...State.data,
-    currentPhotos: Array.isArray(State.data.currentPhotos)
-      ? State.data.currentPhotos.map(f => ({ name: f.name, type: f.type, size: f.size }))
-      : [],
-    inspoPhoto: State.data.inspoPhoto
-      ? { name: State.data.inspoPhoto.name, type: State.data.inspoPhoto.type, size: State.data.inspoPhoto.size }
-      : null
-  };
+  const controller = new AbortController();
+  const timeoutMs = 12000;
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   fetch(APPS_SCRIPT_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(State.data),
+    signal: controller.signal
   })
     .then(() => {
+      clearTimeout(timeoutId);
       State.step = Steps.indexOf("thankyou");
-      syncHistory();
       render();
     })
     .catch(() => {
-      alert("Submission failed. Please try again.");
+      clearTimeout(timeoutId);
+      alert("Submission is taking longer than expected. Please tap Submit again.");
       State.step = Steps.indexOf("review");
-      syncHistory();
       render();
     });
 }
