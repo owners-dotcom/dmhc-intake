@@ -177,13 +177,25 @@ function Basics() {
       value="${escapeAttr(State.data.phone || "")}"
       oninput="State.data.phone=this.value" />
 
-    <div class="nav">
+    <div class="nav" style="margin-top:18px; display:flex; gap:12px; align-items:center;">
       <button class="btn ghost" type="button" onclick="back()">Back</button>
-      <button class="btn primary" type="button" onclick="next()">Continue</button>
+      <button class="btn primary" type="button" onclick="nextFromBasics()">Continue</button>
     </div>
   `;
 
   return div;
+}
+
+function nextFromBasics(){
+  const name  = String(State.data.name  || "").trim();
+  const email = String(State.data.email || "").trim();
+  const phone = String(State.data.phone || "").trim();
+
+  if (!name)  return alert("Please enter your full name.");
+  if (!email) return alert("Please enter your email.");
+  if (!phone) return alert("Please enter your phone number.");
+
+  next();
 }
 
 function Services() {
@@ -283,13 +295,30 @@ function handleInspoPhoto(fileList) {
 function Review() {
   const div = document.createElement("div");
 
+  const summary = {
+    name: State.data.name || "—",
+    email: State.data.email || "—",
+    phone: State.data.phone || "—",
+    service: State.data.service || "—",
+    lastColor: State.data.lastColor || "—",
+    currentPhotos: Array.isArray(State.data.currentPhotos) ? `${State.data.currentPhotos.length} file(s)` : "—",
+    inspoPhoto: State.data.inspoPhoto ? "1 file" : "—"
+  };
+
   div.innerHTML = `
     <h1>Review your details</h1>
-    <pre style="white-space:pre-wrap; background:rgba(0,0,0,0.03); padding:12px; border-radius:10px;">${escapeHtml(
-      JSON.stringify(State.data, null, 2)
-    )}</pre>
 
-    <div class="nav">
+    <div style="background:rgba(0,0,0,0.03); padding:12px; border-radius:12px; line-height:1.6;">
+      <div><strong>Name:</strong> ${escapeHtml(summary.name)}</div>
+      <div><strong>Email:</strong> ${escapeHtml(summary.email)}</div>
+      <div><strong>Phone:</strong> ${escapeHtml(summary.phone)}</div>
+      <div style="margin-top:10px;"><strong>Service:</strong> ${escapeHtml(summary.service)}</div>
+      <div><strong>Hair history:</strong> ${escapeHtml(summary.lastColor)}</div>
+      <div style="margin-top:10px;"><strong>Current hair photos:</strong> ${escapeHtml(summary.currentPhotos)}</div>
+      <div><strong>Inspiration photo:</strong> ${escapeHtml(summary.inspoPhoto)}</div>
+    </div>
+
+    <div class="nav" style="margin-top:18px; display:flex; gap:12px; align-items:center;">
       <button class="btn ghost" type="button" onclick="back()">Back</button>
       <button class="btn primary" type="button" onclick="submitForm()">Submit</button>
     </div>
