@@ -194,3 +194,49 @@ p {
 .nav .btn:active{
   transform: translateY(1px);
 }
+
+.app-shell{
+  min-height:100vh;
+  padding:28px 16px 56px;
+  background:#f5f1ea;
+}
+
+.container{
+  max-width:720px;
+  margin:0 auto;
+}
+
+.screen{
+  background:#fbfaf7;
+  border:1px solid rgba(0,0,0,.06);
+  border-radius:16px;
+  padding:28px 28px 22px;
+  box-shadow:0 10px 30px rgba(0,0,0,.06);
+}
+
+.card{
+  border:1px solid rgba(0,0,0,.08);
+  border-radius:14px;
+  background:#ffffff;
+  box-shadow:0 8px 20px rgba(0,0,0,.06);
+  transition:transform .12s ease, box-shadow .12s ease;
+}
+
+.card:hover{
+  transform:translateY(-2px);
+  box-shadow:0 14px 30px rgba(0,0,0,.10);
+}
+
+.nav{ display:flex; gap:12px; align-items:center; margin-top:18px; }
+
+.btn.ghost{
+  border:1px solid rgba(0,0,0,.14);
+  background:transparent;
+  border-radius:999px;
+  padding:12px 18px;
+}
+
+.button{
+  border-radius:999px;
+}
+
