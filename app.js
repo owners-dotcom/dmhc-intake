@@ -32,6 +32,11 @@ const Steps = [
 ============================== */
 
 document.addEventListener("DOMContentLoaded", () => {
+  const stepParam = Number(new URL(window.location.href).searchParams.get("step") || 0);
+  if (!Number.isNaN(stepParam)) {
+    State.step = Math.max(0, Math.min(stepParam, Steps.length - 1));
+  }
+  syncHistory(true); // replaceState
   render();
 });
 
