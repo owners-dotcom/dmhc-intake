@@ -1,5 +1,5 @@
 /* DMHC Intake — FULL styles.css (paste-replace)
-   Adds: C-style “liquid glass” animated background + proper vertical centering.
+   Adds: “liquid glass” animated background + reliable vertical centering + dark mode safety.
    No HTML changes required.
 */
 
@@ -41,7 +41,6 @@ body{
 
 /* ==============================
    “C” BACKGROUND (LIQUID GLASS)
-   - subtle, slow, non-cheesy
 ============================== */
 
 /* Soft drifting blobs */
@@ -92,7 +91,7 @@ body::after{
 ============================== */
 
 #app{
-  min-height: 100svh; /* modern mobile viewport */
+  min-height: 100svh;
   padding: 18px 14px 26px;
   display:flex;
   flex-direction:column;
@@ -125,7 +124,16 @@ body::after{
   justify-content:flex-start;
 }
 
-/* When you add: screen.classList.add("centered") */
+/* ✅ Make key screens auto-center vertically without JS changes */
+.screen:has(.center-splash),
+.screen:has(.loading-center){
+  align-items:center;
+  justify-content:center;
+  padding-top: 6svh;
+  padding-bottom: 10svh;
+}
+
+/* Optional: if you later add screen.classList.add("centered") */
 .screen.centered{
   align-items:center;
   justify-content:center;
@@ -143,7 +151,7 @@ body::after{
   width:100%;
 }
 
-/* Primary “glass card” look (applies to most screens by convention) */
+/* Primary “glass card” look */
 .screen > div{
   background: var(--card);
   border: 1px solid rgba(255,255,255,.65);
@@ -154,7 +162,7 @@ body::after{
   padding: 22px 22px 20px;
 }
 
-/* Keep splash/loading/thankyou tighter and visually centered */
+/* Keep splash/loading tighter */
 .center-splash,
 .loading-center{
   text-align:center;
@@ -162,9 +170,7 @@ body::after{
 }
 
 @supports not (backdrop-filter: blur(14px)){
-  .screen > div{
-    background: var(--card-solid);
-  }
+  .screen > div{ background: var(--card-solid); }
 }
 
 /* ==============================
@@ -262,9 +268,7 @@ p{ margin: 0 0 14px; }
   box-shadow: 0 14px 35px rgba(15,63,55,.25);
 }
 
-.btn.ghost{
-  background: rgba(255,255,255,.62);
-}
+.btn.ghost{ background: rgba(255,255,255,.62); }
 
 .btn.disabled,
 .btn:disabled{
@@ -322,16 +326,10 @@ p{ margin: 0 0 14px; }
   gap: 12px;
   margin-bottom: 10px;
 }
-.photo-title{
-  font-weight: 800;
-}
-.photo-meta{
-  font-size: 13px;
-}
+.photo-title{ font-weight: 800; }
+.photo-meta{ font-size: 13px; }
 
-.file-hidden{
-  display:none;
-}
+.file-hidden{ display:none; }
 
 .thumbs{
   display:flex;
@@ -429,22 +427,55 @@ p{ margin: 0 0 14px; }
   margin: 14px auto 10px;
   animation: spin 1.05s linear infinite;
 }
-
 .hair-loader.big{
   width: 46px;
   height: 46px;
   border-width: 4px;
 }
 
-.loading-stack{
-  margin-top: 10px;
-}
-.loading-line{
-  font-size: 15px;
-}
+.loading-stack{ margin-top: 10px; }
+.loading-line{ font-size: 15px; }
 
-@keyframes spin{
-  to{ transform: rotate(360deg); }
+@keyframes spin{ to{ transform: rotate(360deg); } }
+
+/* ==============================
+   DARK MODE SAFETY (IMPORTANT)
+============================== */
+
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg-1:#0f1211;
+    --bg-2:#101816;
+    --ink:#f2f2f2;
+    --muted:#b7b7b7;
+
+    --card:rgba(18,22,21,.78);
+    --card-solid:#121615;
+    --stroke:rgba(255,255,255,.12);
+
+    --shadow:0 22px 65px rgba(0,0,0,.55);
+  }
+
+  body{
+    background: radial-gradient(1200px 700px at 20% 10%, var(--bg-2), var(--bg-1));
+  }
+
+  body::after{
+    opacity:.10;
+    mix-blend-mode: screen;
+  }
+
+  .progress{ background: rgba(255,255,255,.10); }
+  .btn{ background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.10); color: var(--ink); }
+  .btn.ghost{ background: rgba(255,255,255,.06); }
+  .card,
+  .photo-block,
+  .review-card{ background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.10); }
+  .input{ background: rgba(255,255,255,.08); color: var(--ink); }
+  .req{ color: rgba(255,255,255,.40); }
+  .review-divider{ background: rgba(255,255,255,.10); }
+  .pill{ background: rgba(31,95,82,.22); border-color: rgba(31,95,82,.35); }
+  .hair-loader{ border-color: rgba(255,255,255,.14); border-top-color: rgba(31,95,82,.95); }
 }
 
 /* ==============================
