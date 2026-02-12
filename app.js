@@ -165,20 +165,19 @@ function render() {
   if (node) screen.appendChild(node);
   app.appendChild(screen);
 
+  // Post-render hooks
   if (current === "basics") bindBasicsInteractions();
   if (current === "photos") bindPhotoInteractions();
 
   if (current === "loading") {
+    // enable retry button if present
     bindLoadingInteractions_();
 
-    if (State.ui.loadingMode !== "submit") {
-      startLoadingQuotes();
-    }
+    // only run quotes if we're not in submit-mode
+    if (State.ui.loadingMode !== "submit") startLoadingQuotes();
   }
 
-  if (current === "splash") {
-    startSplashAutoAdvance();
-  }
+  if (current === "splash") startSplashAutoAdvance();
 }
 
 /* ==============================
