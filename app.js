@@ -186,6 +186,8 @@ function render() {
 if (current === "photos") bindPhotoInteractions();
 
 if (current === "loading") {
+  bindLoadingInteractions_();
+
   if (State.ui.loadingMode !== "submit") {
     startLoadingQuotes();
   }
