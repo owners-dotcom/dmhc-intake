@@ -183,9 +183,16 @@ function render() {
 
   // Post-render hooks (NO re-render while typing)
   if (current === "basics") bindBasicsInteractions();
-  if (current === "photos") bindPhotoInteractions();
-  if (current === "loading") startLoadingQuotes();
-  if (current === "splash") startSplashAutoAdvance();
+if (current === "photos") bindPhotoInteractions();
+
+if (current === "loading") {
+  if (State.ui.loadingMode !== "submit") {
+    startLoadingQuotes();
+  }
+}
+
+if (current === "splash") {
+  startSplashAutoAdvance();
 }
 
 /* ==============================
