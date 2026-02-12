@@ -815,22 +815,24 @@ const DMHCAdapter = (() => {
 ============================== */
 
 async function submitForm() {
-  // Build canon payload with required fallback for name
   const fullName = (State.data.fullName || State.data.name || "").trim();
   const email = (State.data.email || "").trim();
   const phone = (State.data.phone || "").trim();
 
-  // Enforced: identity + MIN_CURRENT_PHOTOS
+  const currentCount = normalizeToFileList_(State.data.currentPhotos || [])
+    .slice(0, MAX_CURRENT_PHOTOS)
+    .length;
+
   if (!fullName) return setReviewError_("Please add your name, then submit again.");
   if (!isEmailish(email)) return setReviewError_("That email looks a little off — please double-check it.");
   if (!phone) return setReviewError_("Please add a phone number so we can reach you.");
-  if (!getSelectedFiles_().length) return setReviewError_("Please add at least one photo of your current hair.");
+  if (currentCount < MIN_CURRENT_PHOTOS) return setReviewError_("Please add at least one photo of your current hair.");
 
   // prevent double submit taps
   if (State.ui.submitting) return;
   State.ui.submitting = true;
 
-  // Loading screen in "submit" mode (no looping quotes)
+  // Loading screen in submit mode
   State.ui.loadingMode = "submit";
   State.ui.showLoadingRetry = false;
   State.ui.loadingRetryMsg = "";
@@ -838,24 +840,15 @@ async function submitForm() {
   goToStep(Steps.indexOf("loading"));
 
   try {
-    // 1) Normalize photos to File objects
+    // current first, then inspo; enforce TOTAL max
     const picked = normalizeToFileList_(getSelectedFiles_()).slice(0, MAX_TOTAL_PHOTOS);
 
-    if (picked.length < MIN_CURRENT_PHOTOS) {
-      State.ui.submitting = false;
-      goToStep(Steps.indexOf("review"));
-      return setReviewError_("Please add at least one photo of your current hair.");
-    }
-
-    // 2) Compress to JPEG base64 (no prefix)
+    // compress
     const photos = [];
-
     for (let i = 0; i < picked.length; i++) {
       setLoadingLine_(`Optimizing photo ${i + 1} of ${picked.length}…`);
       const f = picked[i];
-
       const base64 = await compressToJpegBase64_(f, MAX_EDGE_PX, JPEG_QUALITY);
-
       photos.push({
         originalName: f.name || "upload.jpg",
         mime: "image/jpeg",
@@ -863,17 +856,15 @@ async function submitForm() {
       });
     }
 
-    // 3) Build canonical payload
+    // payload
     const payload = DMHCAdapter.buildPayload({
       ...State.data,
       fullName,
       email,
       phone
     });
-
     payload.photos = photos;
 
-    // 4) Submit
     setLoadingLine_("Sending securely…");
 
     const controller = new AbortController();
@@ -889,7 +880,6 @@ async function submitForm() {
     clearTimeout(timeoutId);
 
     let out = null;
-
     try {
       out = await res.json();
     } catch (e) {
@@ -899,7 +889,7 @@ async function submitForm() {
     State.ui.submitting = false;
 
     if (out && out.ok) {
-      State.ui.loadingMode = "quotes"; // restore default mode
+      State.ui.loadingMode = "quotes";
       goToStep(Steps.indexOf("thankyou"));
       return;
     }
@@ -909,7 +899,6 @@ async function submitForm() {
       : "We didn’t get a clean confirmation. Tap Try Again once.";
 
     showLoadingRetry_(msg);
-
   } catch (err) {
     if (err && err.name === "AbortError") {
       State.ui.submitting = false;
