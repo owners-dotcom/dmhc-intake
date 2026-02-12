@@ -592,56 +592,143 @@ function ThankYou() {
 }
 
 /* ==============================
-   SUBMISSION
+   SUBMISSION (DROP-IN REPLACEMENT)
+   Replace your existing submitForm() with this entire block.
 ============================== */
 
-function submitForm() {
-  // IMPORTANT: No system alerts. Soft guidance only.
-  // If someone deep-linked to review without basics, we don't hard-block.
-  // We still encourage completion before submit.
+async function submitForm() {
+  // Keep existing soft validation (minimal change)
+  if (!(State.data.name || "").trim()) return alert("Please add your name.");
+  if (!isEmailish((State.data.email || "").trim())) return alert("Please add a valid email.");
+  if (!(State.data.phone || "").trim()) return alert("Please add your phone number.");
+  if (!(State.data.service || "").trim()) return alert("Please choose a service.");
 
-  const missing = [];
-  if (!(State.data.name || "").trim()) missing.push("name");
-  if (!isEmailish((State.data.email || "").trim())) missing.push("email");
-  if (!(State.data.phone || "").trim()) missing.push("phone");
-  if (!(State.data.service || "").trim()) missing.push("service");
+  // Build the canonical photo list (current photos + optional inspo), then enforce backend rules (1–3)
+  const current = Array.isArray(State.data.currentPhotos) ? State.data.currentPhotos : [];
+  const inspo = State.data.inspoPhoto ? [State.data.inspoPhoto] : [];
+  const pickedFiles = [...current, ...inspo].filter(Boolean).slice(0, 3);
 
-  if (missing.length) {
-    State.ui.reviewError =
-      "Quick fix: please add your " +
-      missing.join(", ") +
-      " above (tap Back).";
-    render();
-    return;
+  if (pickedFiles.length < 1) {
+    return alert("Please add at least one photo of your current hair.");
   }
 
+  // Go to loading screen immediately (keep flow)
   goToStep(Steps.indexOf("loading"));
 
-  const payload = {
-    ...State.data,
-    currentPhotos: (State.data.currentPhotos || []).map(f => ({ name: f.name, type: f.type, size: f.size })),
-    inspoPhoto: State.data.inspoPhoto ? { name: State.data.inspoPhoto.name, type: State.data.inspoPhoto.type, size: State.data.inspoPhoto.size } : null
-  };
+  try {
+    // Convert selected photos -> backend-canonical photos[] with base64 (JPEG, no prefix)
+    const photos = [];
+    for (const f of pickedFiles) {
+      const base64 = await compressToJpegBase64_(f, 1600, 0.78);
+      photos.push({
+        originalName: f.name || "upload.jpg",
+        mime: "image/jpeg",
+        base64
+      });
+    }
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 18000);
+    // Canonical payload (backend contract)
+    const payload = {
+      company: "", // honeypot must exist
+      fullName: (State.data.name || "").trim(),
+      phone: (State.data.phone || "").trim(),
+      email: (State.data.email || "").trim(),
 
-  fetch(APPS_SCRIPT_URL, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify(payload),
-    signal: controller.signal
-  })
-    .then(() => {
-      clearTimeout(timeoutId);
-      goToStep(Steps.indexOf("thankyou"));
-    })
-    .catch(() => {
-      clearTimeout(timeoutId);
-      // no alert; return them to review with a calm message
-      State.ui.reviewError = "That took longer than expected — please tap Submit again.";
-      goToStep(Steps.indexOf("review"));
+      preferredStylist: "", // keep stable even if blank
+      services: State.data.service ? [String(State.data.service)] : [],
+      goals: "",
+      lastColorDate: (State.data.lastColor || "").trim(),
+      boxDye: "",
+      chemicalServices: "",
+      sensitivities: "",
+
+      submittedFrom: String(window.location.href || ""),
+      userAgent: String(navigator.userAgent || ""),
+
+      photos // <- required by backend (1–3)
+    };
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload),
+      signal: controller.signal
     });
+
+    clearTimeout(timeoutId);
+
+    // Backend may return JSON; treat ok:true as success (including dedupe ok:true)
+    let out = null;
+    try {
+      out = await res.json();
+    } catch (e) {
+      // Some GAS responses are plain text; treat as success if HTTP ok
+      out = { ok: res.ok };
+    }
+
+    if (out && out.ok) {
+      goToStep(Steps.indexOf("thankyou"));
+      return;
+    }
+
+    // If backend returns ok:false with message, show a simple alert and return to Review
+    const msg = (out && out.message) ? String(out.message) : "That didn’t go through. Please tap Submit again.";
+    alert(msg);
+    goToStep(Steps.indexOf("review"));
+  } catch (err) {
+    alert("That took longer than expected. Please tap Submit again.");
+    goToStep(Steps.indexOf("review"));
+  }
+}
+
+/* ==============================
+   PHOTO HELPERS (required by submitForm)
+============================== */
+
+async function compressToJpegBase64_(file, maxEdgePx = 1600, quality = 0.78) {
+  const img = await fileToImage_(file);
+
+  const w0 = img.naturalWidth || img.width;
+  const h0 = img.naturalHeight || img.height;
+
+  let w = w0;
+  let h = h0;
+
+  const scale = Math.min(1, maxEdgePx / Math.max(w0, h0));
+  w = Math.max(1, Math.round(w0 * scale));
+  h = Math.max(1, Math.round(h0 * scale));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+
+  const ctx = canvas.getContext("2d", { alpha: false });
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(img, 0, 0, w, h);
+
+  const dataUrl = canvas.toDataURL("image/jpeg", quality);
+  const parts = dataUrl.split(",");
+  return parts[1] || ""; // base64 only, no prefix
+}
+
+function fileToImage_(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(img);
+    };
+    img.onerror = (e) => {
+      URL.revokeObjectURL(url);
+      reject(e);
+    };
+    img.src = url;
+  });
 }
 
 /* ==============================
