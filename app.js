@@ -181,20 +181,20 @@ function render() {
   if (node) screen.appendChild(node);
   app.appendChild(screen);
 
-  // Post-render hooks (NO re-render while typing)
   if (current === "basics") bindBasicsInteractions();
-if (current === "photos") bindPhotoInteractions();
+  if (current === "photos") bindPhotoInteractions();
 
-if (current === "loading") {
-  bindLoadingInteractions_();
+  if (current === "loading") {
+    bindLoadingInteractions_();
 
-  if (State.ui.loadingMode !== "submit") {
-    startLoadingQuotes();
+    if (State.ui.loadingMode !== "submit") {
+      startLoadingQuotes();
+    }
   }
-}
 
-if (current === "splash") {
-  startSplashAutoAdvance();
+  if (current === "splash") {
+    startSplashAutoAdvance();
+  }
 }
 
 /* ==============================
