@@ -27,19 +27,17 @@ const MIN_CURRENT_PHOTOS = 1;
 const State = {
   step: 0,
   data: {
-    // legacy fields currently used by UI
     name: "",
     email: "",
     phone: "",
     service: "",
     lastColor: "",
-    currentPhotos: [], // SHOULD be File objects
-    inspoPhoto: null,  // SHOULD be File (or null)
+    currentPhotos: [],
+    inspoPhoto: null,
 
-    // future / optional (adapter will pick if you add UI later)
     fullName: "",
     preferredStylist: "",
-    services: [], // optional array
+    services: [],
     goals: "",
     lastColorDate: "",
     boxDye: "",
@@ -48,36 +46,22 @@ const State = {
     hairLength: "",
     maintenanceFrequency: "",
     referralSource: "",
-    company: "" // honeypot
+    company: ""
   },
   ui: {
     error: "",
     reviewError: "",
     splashTimer: null,
     loadingTimer: null,
-    loadingQuoteIdx: 0
+    loadingQuoteIdx: 0,
+
+    // REQUIRED for submit/loading UX
+    submitting: false,
+    loadingMode: "quotes",      // "quotes" | "submit"
+    showLoadingRetry: false,
+    loadingRetryMsg: ""
   }
 };
-
-const Steps = [
-  "splash",
-  "welcome",
-  "basics",
-  "services",
-  "history",
-  "photos",
-  "review",
-  "loading",
-  "thankyou"
-];
-
-const LOADING_QUOTES = [
-  "Uploading photos…",
-  "Optimizing images…",
-  "Sending your details…",
-  "Finishing up…",
-  "Still uploading — hang tight…"
-];
 
 /* ==============================
    INIT
