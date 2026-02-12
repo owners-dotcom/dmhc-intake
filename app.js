@@ -144,6 +144,8 @@ function render(initialPush = false) {
 
   const current = Steps[State.step];
 
+if (["splash","loading","thankyou"].includes(current)) screen.classList.add("centered");
+
   let node = null;
   switch (current) {
     case "splash": node = Splash(); break;
