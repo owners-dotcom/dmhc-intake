@@ -498,32 +498,44 @@ function bindPhotoInteractions() {
   btnPickCurrent.addEventListener("click", () => fileCurrent.click());
   btnPickInspo.addEventListener("click", () => fileInspo.click());
 
+  // Current hair: append + dedupe + cap(3)
   fileCurrent.addEventListener("change", async () => {
-    State.data.currentPhotos = normalizeToFileList_(Array.from(fileCurrent.files || []));
-    if (metaCurrent) metaCurrent.textContent = State.data.currentPhotos.length ? `${State.data.currentPhotos.length} selected` : "None selected";
+    const newlyPicked = normalizeToFileList_(Array.from(fileCurrent.files || []));
+    const existing = normalizeToFileList_(State.data.currentPhotos || []);
+
+    State.data.currentPhotos = mergeFilesDedupCap_(existing, newlyPicked, MAX_PHOTOS);
+
+    // allow re-picking the same file to trigger change again
+    fileCurrent.value = "";
+
+    if (metaCurrent) {
+      metaCurrent.textContent = State.data.currentPhotos.length
+        ? `${State.data.currentPhotos.length} selected`
+        : "None selected";
+    }
+
     await renderThumbs(State.data.currentPhotos, thumbsCurrent);
   });
 
-  fileCurrent.addEventListener("change", async () => {
-  const newlyPicked = normalizeToFileList_(Array.from(fileCurrent.files || []));
-  const existing = normalizeToFileList_(State.data.currentPhotos || []);
+  // Inspiration: single file, replace
+  fileInspo.addEventListener("change", async () => {
+    const f = (fileInspo.files && fileInspo.files[0]) ? fileInspo.files[0] : null;
+    State.data.inspoPhoto = normalizeOneFile_(f);
 
-  // append + dedupe + cap
-  State.data.currentPhotos = mergeFilesDedupCap_(existing, newlyPicked, MAX_PHOTOS);
+    // allow re-picking the same file to trigger change again
+    fileInspo.value = "";
 
-  // allow re-picking the same file to trigger change again
-  fileCurrent.value = "";
-
-  if (metaCurrent) {
-    metaCurrent.textContent = State.data.currentPhotos.length
-      ? `${State.data.currentPhotos.length} selected`
-      : "None selected";
-  }
-
-  await renderThumbs(State.data.currentPhotos, thumbsCurrent);
-});
+    if (metaInspo) metaInspo.textContent = State.data.inspoPhoto ? "1 selected" : "None selected";
+    await renderThumbs(State.data.inspoPhoto ? [State.data.inspoPhoto] : [], thumbsInspo);
+  });
 
   // initial thumbs (no re-render)
+  if (metaCurrent) {
+    const n = normalizeToFileList_(State.data.currentPhotos || []).length;
+    metaCurrent.textContent = n ? `${n} selected` : "None selected";
+  }
+  if (metaInspo) metaInspo.textContent = State.data.inspoPhoto ? "1 selected" : "None selected";
+
   renderThumbs(normalizeToFileList_(State.data.currentPhotos || []), thumbsCurrent);
   renderThumbs(State.data.inspoPhoto ? [normalizeOneFile_(State.data.inspoPhoto)] : [], thumbsInspo);
 }
