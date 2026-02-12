@@ -91,6 +91,14 @@ document.addEventListener("DOMContentLoaded", () => {
     State.step = 0;
   }
 
+// Expose functions for inline onclick handlers (required if script is module-scoped)
+Object.assign(window, {
+  next,
+  back,
+  selectService,
+  submitForm
+});
+
   // Keep browser back/forward inside the flow
   syncHistory(true);
 
