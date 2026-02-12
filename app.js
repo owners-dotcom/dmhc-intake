@@ -8,10 +8,17 @@ const APPS_SCRIPT_URL =
   "https://script.google.com/macros/s/AKfycbwQ9jmUDlTS46nRr0aNtC6wFIoSzl-6QnLg-rjwo06nnom_NEcaiTthBQ3zQ9GJ5sAI/exec";
 
 // Photo compression defaults (safe for Apps Script limits)
-const MAX_EDGE_PX = 1600;
-const JPEG_QUALITY = 0.78;
-const MAX_PHOTOS = 3;
-const MIN_PHOTOS = 1;
+const MAX_EDGE_PX = 1400;      // lowered slightly
+const JPEG_QUALITY = 0.74;     // lowered slightly
+
+// Photo limits (NEW RULE):
+// - Current hair: up to 2 (REQUIRED: at least 1)
+// - Inspiration: up to 1 (optional)
+// - Total max: 3
+const MAX_CURRENT_PHOTOS = 2;
+const MAX_INSPO_PHOTOS = 1;
+const MAX_TOTAL_PHOTOS = MAX_CURRENT_PHOTOS + MAX_INSPO_PHOTOS;
+const MIN_CURRENT_PHOTOS = 1;
 
 /* ==============================
    APP STATE
@@ -65,10 +72,11 @@ const Steps = [
 ];
 
 const LOADING_QUOTES = [
-  "Getting your consultation ready…",
-  "Organizing the details…",
-  "Almost there…",
-  "One last step…"
+  "Uploading photos…",
+  "Optimizing images…",
+  "Sending your details…",
+  "Finishing up…",
+  "Still uploading — hang tight…"
 ];
 
 /* ==============================
@@ -441,16 +449,16 @@ function History() {
 function Photos() {
   const div = document.createElement("div");
 
-  const currentCount = Array.isArray(State.data.currentPhotos) ? State.data.currentPhotos.length : 0;
+  const currentCount = normalizeToFileList_(State.data.currentPhotos || []).slice(0, MAX_CURRENT_PHOTOS).length;
   const inspoCount = State.data.inspoPhoto ? 1 : 0;
 
   div.innerHTML = `
     <h1>Photos</h1>
-    <p class="muted">Add 1–3 photos of your current hair, plus 1 inspiration photo if you have it.</p>
+    <p class="muted">Add 1–2 photos of your current hair. Inspiration is optional (0–1). Total max: 3.</p>
 
     <div class="photo-block">
       <div class="photo-head">
-        <div class="photo-title">Current hair (1–3)</div>
+        <div class="photo-title">Current hair (1–2) <span class="req">*</span></div>
         <div class="photo-meta muted" id="metaCurrent">${currentCount ? `${currentCount} selected` : "None selected"}</div>
       </div>
 
@@ -498,12 +506,12 @@ function bindPhotoInteractions() {
   btnPickCurrent.addEventListener("click", () => fileCurrent.click());
   btnPickInspo.addEventListener("click", () => fileInspo.click());
 
-  // Current hair: append + dedupe + cap(3)
+  // Current hair: append + dedupe + cap(2)
   fileCurrent.addEventListener("change", async () => {
     const newlyPicked = normalizeToFileList_(Array.from(fileCurrent.files || []));
     const existing = normalizeToFileList_(State.data.currentPhotos || []);
 
-    State.data.currentPhotos = mergeFilesDedupCap_(existing, newlyPicked, MAX_PHOTOS);
+    State.data.currentPhotos = mergeFilesDedupCap_(existing, newlyPicked, MAX_CURRENT_PHOTOS);
 
     // allow re-picking the same file to trigger change again
     fileCurrent.value = "";
@@ -517,7 +525,7 @@ function bindPhotoInteractions() {
     await renderThumbs(State.data.currentPhotos, thumbsCurrent);
   });
 
-  // Inspiration: single file, replace
+  // Inspiration: single file, replace (optional)
   fileInspo.addEventListener("change", async () => {
     const f = (fileInspo.files && fileInspo.files[0]) ? fileInspo.files[0] : null;
     State.data.inspoPhoto = normalizeOneFile_(f);
@@ -531,12 +539,12 @@ function bindPhotoInteractions() {
 
   // initial thumbs (no re-render)
   if (metaCurrent) {
-    const n = normalizeToFileList_(State.data.currentPhotos || []).length;
+    const n = normalizeToFileList_(State.data.currentPhotos || []).slice(0, MAX_CURRENT_PHOTOS).length;
     metaCurrent.textContent = n ? `${n} selected` : "None selected";
   }
   if (metaInspo) metaInspo.textContent = State.data.inspoPhoto ? "1 selected" : "None selected";
 
-  renderThumbs(normalizeToFileList_(State.data.currentPhotos || []), thumbsCurrent);
+  renderThumbs(normalizeToFileList_(State.data.currentPhotos || []).slice(0, MAX_CURRENT_PHOTOS), thumbsCurrent);
   renderThumbs(State.data.inspoPhoto ? [normalizeOneFile_(State.data.inspoPhoto)] : [], thumbsInspo);
 }
 
@@ -637,21 +645,18 @@ function startLoadingQuotes() {
   const maxIdx = LOADING_QUOTES.length - 1;
 
   State.ui.loadingTimer = setInterval(() => {
-    // if user navigated away, stop
     if (Steps[State.step] !== "loading") {
       stopLoadingTimer();
       return;
     }
 
-    // advance
     State.ui.loadingQuoteIdx = Math.min(State.ui.loadingQuoteIdx + 1, maxIdx);
     el.textContent = LOADING_QUOTES[State.ui.loadingQuoteIdx];
 
-    // once we hit the last quote, stop cycling
     if (State.ui.loadingQuoteIdx >= maxIdx) {
       stopLoadingTimer();
     }
-  }, 2300);
+  }, 2600);
 }
 
 function stopLoadingTimer() {
@@ -747,7 +752,7 @@ const DMHCAdapter = (() => {
       userAgent,
       photos: []
     };
-
+    
     // Ensure only canon keys exist (contract hygiene)
     const clean = {};
     for (const k of CANON_KEYS) clean[k] = payload[k];
@@ -755,10 +760,6 @@ const DMHCAdapter = (() => {
   }
 
   function normalizeServices_(d) {
-    // priority:
-    // 1) d.services if array
-    // 2) d.services if string
-    // 3) d.service string
     const raw = d && typeof d === "object" ? d.services : null;
     if (Array.isArray(raw)) {
       return raw.map(x => String(x || "").trim()).filter(Boolean);
@@ -777,7 +778,6 @@ const DMHCAdapter = (() => {
         const v = obj[k];
         if (typeof v === "string") return v.trim();
         if (v == null) continue;
-        // allow numbers/bools as strings if they show up
         return String(v).trim();
       }
     }
@@ -792,26 +792,30 @@ const DMHCAdapter = (() => {
 ============================== */
 
 async function submitForm() {
-  // Build canon payload with required fallback for name
   const fullName = (State.data.fullName || State.data.name || "").trim();
   const email = (State.data.email || "").trim();
   const phone = (State.data.phone || "").trim();
 
-  // TEMP: keep light validation (fast iteration)
-  // Enforced: identity + MIN_PHOTOS
   if (!fullName) return setReviewError_("Please add your name, then submit again.");
   if (!isEmailish(email)) return setReviewError_("That email looks a little off — please double-check it.");
   if (!phone) return setReviewError_("Please add a phone number so we can reach you.");
-  if (!getSelectedFiles_().length) return setReviewError_("Please add at least one photo of your current hair.");
+
+  // REQUIRE: at least 1 CURRENT photo (inspiration not required)
+  const currentPickedNow = normalizeToFileList_(State.data.currentPhotos || []).slice(0, MAX_CURRENT_PHOTOS);
+  if (currentPickedNow.length < MIN_CURRENT_PHOTOS) {
+    return setReviewError_("Please add at least one photo of your current hair.");
+  }
 
   // Go to loading screen immediately
   goToStep(Steps.indexOf("loading"));
 
   try {
-    // 1) Normalize photos to File objects (supports {file: File} just in case)
-    const picked = normalizeToFileList_(getSelectedFiles_()).slice(0, MAX_PHOTOS);
+    // 1) Build picked list with caps: 2 current + (optional) 1 inspo
+    const current = currentPickedNow;
+    const inspo = State.data.inspoPhoto ? [normalizeOneFile_(State.data.inspoPhoto)] : [];
+    const picked = [...current, ...inspo].filter(Boolean).slice(0, MAX_TOTAL_PHOTOS);
 
-    if (picked.length < MIN_PHOTOS) {
+    if (current.length < MIN_CURRENT_PHOTOS) {
       goToStep(Steps.indexOf("review"));
       return setReviewError_("Please add at least one photo of your current hair.");
     }
@@ -830,7 +834,6 @@ async function submitForm() {
     // 3) Build canonical payload (adapter)
     const payload = DMHCAdapter.buildPayload({
       ...State.data,
-      // ensure required keys align
       fullName,
       email,
       phone
@@ -838,9 +841,9 @@ async function submitForm() {
 
     payload.photos = photos;
 
-    // 4) Submit
+    // 4) Submit (give more time for mobile uploads)
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    const timeoutId = setTimeout(() => controller.abort(), 45000);
 
     const res = await fetch(APPS_SCRIPT_URL, {
       method: "POST",
@@ -851,7 +854,6 @@ async function submitForm() {
 
     clearTimeout(timeoutId);
 
-    // GAS may respond JSON or text
     let out = null;
     try {
       out = await res.json();
@@ -869,7 +871,16 @@ async function submitForm() {
     setReviewError_(msg);
   } catch (err) {
     goToStep(Steps.indexOf("review"));
-    setReviewError_("That took longer than expected. Please tap Submit again.");
+
+    const isAbort =
+      (err && err.name === "AbortError") ||
+      (String(err || "").toLowerCase().includes("abort"));
+
+    setReviewError_(
+      isAbort
+        ? "This is taking longer than expected. Try again on Wi-Fi (or with fewer/clearer photos)."
+        : "That took longer than expected. Please tap Submit again."
+    );
   }
 }
 
@@ -880,7 +891,6 @@ function setReviewError_(msg) {
     el.textContent = msg || "";
     el.classList.toggle("hidden", !msg);
   } else {
-    // If not on review screen yet, fall back to alert
     alert(msg || "Please check your info and try again.");
   }
 }
@@ -890,10 +900,9 @@ function setReviewError_(msg) {
 ============================== */
 
 function getSelectedFiles_() {
-  const current = Array.isArray(State.data.currentPhotos) ? State.data.currentPhotos : [];
-  const inspo = State.data.inspoPhoto ? [State.data.inspoPhoto] : [];
-  // keep order: current first, then inspo
-  return [...current, ...inspo].filter(Boolean);
+  const current = normalizeToFileList_(State.data.currentPhotos || []).slice(0, MAX_CURRENT_PHOTOS);
+  const inspo = State.data.inspoPhoto ? [normalizeOneFile_(State.data.inspoPhoto)] : [];
+  return [...current, ...inspo].filter(Boolean).slice(0, MAX_TOTAL_PHOTOS);
 }
 
 function countPickedPhotos_() {
@@ -985,7 +994,6 @@ async function compressToJpegBase64_(file, maxEdgePx, quality) {
   }
 
   const dataUrl = canvas.toDataURL("image/jpeg", clampNumber_(quality, 0.5, 0.92));
-  // strip prefix: "data:image/jpeg;base64,"
   const commaIdx = dataUrl.indexOf(",");
   return commaIdx >= 0 ? dataUrl.slice(commaIdx + 1) : dataUrl;
 }
