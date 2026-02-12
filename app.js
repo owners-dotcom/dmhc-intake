@@ -454,7 +454,7 @@ function Photos() {
 
   div.innerHTML = `
     <h1>Photos</h1>
-    <p class="muted">Add 1–2 photos of your current hair. Inspiration is optional (0–1). Total max: 3.</p>
+    <p class="muted">Add 1–2 photos of your current hair. Add 1 inspiration photo if you have it. Total max: 3.</p>
 
     <div class="photo-block">
       <div class="photo-head">
@@ -620,15 +620,38 @@ function Loading() {
   const div = document.createElement("div");
   div.className = "loading-center";
 
+  const line = State.ui.loadingMode === "submit"
+    ? "Getting things ready…"
+    : (LOADING_QUOTES[0] || "Getting things ready…");
+
   div.innerHTML = `
     <h1>Submitting…</h1>
+
     <div class="loading-stack">
       <div class="hair-loader" aria-hidden="true"></div>
-      <div class="loading-line muted" id="loadingLine">${escapeHtml(LOADING_QUOTES[0])}</div>
+      <div class="loading-line muted" id="loadingLine">${escapeHtml(line)}</div>
+    </div>
+
+    <div id="loadingRetryWrap" class="${State.ui.showLoadingRetry ? "" : "hidden"}" style="margin-top:14px; text-align:center;">
+      <div class="muted" id="loadingRetryMsg" style="margin-bottom:10px;">
+        ${escapeHtml(State.ui.loadingRetryMsg || "")}
+      </div>
+      <button class="btn primary" type="button" id="btnLoadingRetry">Try Again</button>
     </div>
   `;
 
   return div;
+}
+
+function bindLoadingInteractions_() {
+  const btn = document.getElementById("btnLoadingRetry");
+  if (!btn) return;
+
+  btn.addEventListener("click", () => {
+    // prevent double taps
+    if (State.ui.submitting) return;
+    submitForm({ fromRetry: true });
+  });
 }
 
 function startLoadingQuotes() {
@@ -792,37 +815,44 @@ const DMHCAdapter = (() => {
 ============================== */
 
 async function submitForm() {
+  // Build canon payload with required fallback for name
   const fullName = (State.data.fullName || State.data.name || "").trim();
   const email = (State.data.email || "").trim();
   const phone = (State.data.phone || "").trim();
 
+  // TEMP: keep light validation (fast iteration)
+  // Enforced: identity + MIN_PHOTOS
   if (!fullName) return setReviewError_("Please add your name, then submit again.");
   if (!isEmailish(email)) return setReviewError_("That email looks a little off — please double-check it.");
   if (!phone) return setReviewError_("Please add a phone number so we can reach you.");
+  if (!getSelectedFiles_().length) return setReviewError_("Please add at least one photo of your current hair.");
 
-  // REQUIRE: at least 1 CURRENT photo (inspiration not required)
-  const currentPickedNow = normalizeToFileList_(State.data.currentPhotos || []).slice(0, MAX_CURRENT_PHOTOS);
-  if (currentPickedNow.length < MIN_CURRENT_PHOTOS) {
-    return setReviewError_("Please add at least one photo of your current hair.");
-  }
+  // prevent double submit taps
+  if (State.ui.submitting) return;
+  State.ui.submitting = true;
 
-  // Go to loading screen immediately
+  // Loading screen in "submit" mode (no looping quotes)
+  State.ui.loadingMode = "submit";
+  State.ui.showLoadingRetry = false;
+  State.ui.loadingRetryMsg = "";
+
   goToStep(Steps.indexOf("loading"));
 
   try {
-    // 1) Build picked list with caps: 2 current + (optional) 1 inspo
-    const current = currentPickedNow;
-    const inspo = State.data.inspoPhoto ? [normalizeOneFile_(State.data.inspoPhoto)] : [];
-    const picked = [...current, ...inspo].filter(Boolean).slice(0, MAX_TOTAL_PHOTOS);
+    // 1) Normalize photos to File objects (supports {file: File} just in case)
+    const picked = normalizeToFileList_(getSelectedFiles_()).slice(0, MAX_PHOTOS);
 
-    if (current.length < MIN_CURRENT_PHOTOS) {
+    if (picked.length < MIN_PHOTOS) {
+      State.ui.submitting = false;
       goToStep(Steps.indexOf("review"));
       return setReviewError_("Please add at least one photo of your current hair.");
     }
 
     // 2) Compress to JPEG base64 (no prefix) in the order picked
     const photos = [];
-    for (const f of picked) {
+    for (let i = 0; i < picked.length; i++) {
+      setLoadingLine_(`Optimizing photo ${i + 1} of ${picked.length}…`);
+      const f = picked[i];
       const base64 = await compressToJpegBase64_(f, MAX_EDGE_PX, JPEG_QUALITY);
       photos.push({
         originalName: f.name || "upload.jpg",
@@ -841,9 +871,11 @@ async function submitForm() {
 
     payload.photos = photos;
 
-    // 4) Submit (give more time for mobile uploads)
+    // 4) Submit
+    setLoadingLine_("Sending securely…");
+
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 45000);
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
 
     const res = await fetch(APPS_SCRIPT_URL, {
       method: "POST",
@@ -854,6 +886,7 @@ async function submitForm() {
 
     clearTimeout(timeoutId);
 
+    // GAS may respond JSON or text
     let out = null;
     try {
       out = await res.json();
@@ -861,37 +894,33 @@ async function submitForm() {
       out = { ok: res.ok };
     }
 
+    State.ui.submitting = false;
+
     if (out && out.ok) {
+      // restore quote mode for future non-submit visits to loading (if any)
+      State.ui.loadingMode = "quotes";
       goToStep(Steps.indexOf("thankyou"));
       return;
     }
 
-    const msg = out && out.message ? String(out.message) : "That didn’t go through. Please tap Submit again.";
-    goToStep(Steps.indexOf("review"));
-    setReviewError_(msg);
+    const msg = out && out.message
+      ? String(out.message)
+      : "We didn’t get a clean confirmation. Tap Try Again once.";
+
+    // keep them on loading with retry (prevents panic double-submit from the review screen)
+    showLoadingRetry_(msg);
   } catch (err) {
+    // AbortController timeout or slow mobile network
+    if (err && err.name === "AbortError") {
+      State.ui.submitting = false;
+      showLoadingRetry_("Still working on it — mobile uploads can be slow sometimes. Tap Try Again once.");
+      return;
+    }
+
+    State.ui.submitting = false;
+    // other unexpected errors: route back to review
     goToStep(Steps.indexOf("review"));
-
-    const isAbort =
-      (err && err.name === "AbortError") ||
-      (String(err || "").toLowerCase().includes("abort"));
-
-    setReviewError_(
-      isAbort
-        ? "This is taking longer than expected. Try again on Wi-Fi (or with fewer/clearer photos)."
-        : "That took longer than expected. Please tap Submit again."
-    );
-  }
-}
-
-function setReviewError_(msg) {
-  State.ui.reviewError = msg || "";
-  const el = document.getElementById("reviewError");
-  if (el) {
-    el.textContent = msg || "";
-    el.classList.toggle("hidden", !msg);
-  } else {
-    alert(msg || "Please check your info and try again.");
+    setReviewError_("Something hiccuped on our side. Please tap Submit again.");
   }
 }
 
@@ -1021,6 +1050,25 @@ function fileToImage_(blob) {
 function setCheck(el, ok) {
   if (!el) return;
   el.classList.toggle("on", !!ok);
+}
+
+function setLoadingLine_(msg) {
+  const el = document.getElementById("loadingLine");
+  if (el) el.textContent = String(msg || "");
+}
+
+function showLoadingRetry_(msg) {
+  State.ui.showLoadingRetry = true;
+  State.ui.loadingRetryMsg = String(msg || "");
+
+  const wrap = document.getElementById("loadingRetryWrap");
+  const text = document.getElementById("loadingRetryMsg");
+
+  if (text) text.textContent = State.ui.loadingRetryMsg;
+  if (wrap) wrap.classList.remove("hidden");
+
+  // keep the main line calm and stable
+  setLoadingLine_("Almost there…");
 }
 
 function isEmailish(email) {
