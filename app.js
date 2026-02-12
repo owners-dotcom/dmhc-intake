@@ -27,17 +27,19 @@ const MIN_CURRENT_PHOTOS = 1;
 const State = {
   step: 0,
   data: {
+    // legacy fields currently used by UI
     name: "",
     email: "",
     phone: "",
     service: "",
     lastColor: "",
-    currentPhotos: [],
-    inspoPhoto: null,
+    currentPhotos: [], // SHOULD be File objects
+    inspoPhoto: null,  // SHOULD be File (or null)
 
+    // future / optional (adapter will pick if you add UI later)
     fullName: "",
     preferredStylist: "",
-    services: [],
+    services: [], // optional array
     goals: "",
     lastColorDate: "",
     boxDye: "",
@@ -46,7 +48,7 @@ const State = {
     hairLength: "",
     maintenanceFrequency: "",
     referralSource: "",
-    company: ""
+    company: "" // honeypot
   },
   ui: {
     error: "",
@@ -55,7 +57,7 @@ const State = {
     loadingTimer: null,
     loadingQuoteIdx: 0,
 
-    // REQUIRED for submit/loading UX
+    // NEW (needed by submit/loading UX)
     submitting: false,
     loadingMode: "quotes",      // "quotes" | "submit"
     showLoadingRetry: false,
@@ -165,19 +167,23 @@ function render() {
   if (node) screen.appendChild(node);
   app.appendChild(screen);
 
-  // Post-render hooks
+  // Post-render hooks (NO re-render while typing)
   if (current === "basics") bindBasicsInteractions();
   if (current === "photos") bindPhotoInteractions();
 
   if (current === "loading") {
-    // enable retry button if present
+    // always bind retry button (if present)
     bindLoadingInteractions_();
 
-    // only run quotes if we're not in submit-mode
-    if (State.ui.loadingMode !== "submit") startLoadingQuotes();
+    // only run quote loop when NOT in submit-mode
+    if (State.ui.loadingMode !== "submit") {
+      startLoadingQuotes();
+    }
   }
 
-  if (current === "splash") startSplashAutoAdvance();
+  if (current === "splash") {
+    startSplashAutoAdvance();
+  }
 }
 
 /* ==============================
@@ -819,20 +825,22 @@ async function submitForm() {
   const email = (State.data.email || "").trim();
   const phone = (State.data.phone || "").trim();
 
-  const currentCount = normalizeToFileList_(State.data.currentPhotos || [])
-    .slice(0, MAX_CURRENT_PHOTOS)
-    .length;
-
+  // validate identity
   if (!fullName) return setReviewError_("Please add your name, then submit again.");
   if (!isEmailish(email)) return setReviewError_("That email looks a little off — please double-check it.");
   if (!phone) return setReviewError_("Please add a phone number so we can reach you.");
-  if (currentCount < MIN_CURRENT_PHOTOS) return setReviewError_("Please add at least one photo of your current hair.");
+
+  // validate photos: at least 1 CURRENT
+  const currentCount = normalizeToFileList_(State.data.currentPhotos || []).slice(0, MAX_CURRENT_PHOTOS).length;
+  if (currentCount < MIN_CURRENT_PHOTOS) {
+    return setReviewError_("Please add at least one photo of your current hair.");
+  }
 
   // prevent double submit taps
   if (State.ui.submitting) return;
   State.ui.submitting = true;
 
-  // Loading screen in submit mode
+  // Loading screen in "submit" mode (no looping quotes)
   State.ui.loadingMode = "submit";
   State.ui.showLoadingRetry = false;
   State.ui.loadingRetryMsg = "";
@@ -840,10 +848,18 @@ async function submitForm() {
   goToStep(Steps.indexOf("loading"));
 
   try {
-    // current first, then inspo; enforce TOTAL max
-    const picked = normalizeToFileList_(getSelectedFiles_()).slice(0, MAX_TOTAL_PHOTOS);
+    // Build picked list in correct order and enforce caps
+    const picked = getSelectedFiles_().slice(0, MAX_TOTAL_PHOTOS);
 
-    // compress
+    // extra safety
+    const safeCurrent = normalizeToFileList_(State.data.currentPhotos || []).slice(0, MAX_CURRENT_PHOTOS);
+    if (safeCurrent.length < MIN_CURRENT_PHOTOS) {
+      State.ui.submitting = false;
+      goToStep(Steps.indexOf("review"));
+      return setReviewError_("Please add at least one photo of your current hair.");
+    }
+
+    // Compress to JPEG base64 (no prefix)
     const photos = [];
     for (let i = 0; i < picked.length; i++) {
       setLoadingLine_(`Optimizing photo ${i + 1} of ${picked.length}…`);
@@ -856,13 +872,14 @@ async function submitForm() {
       });
     }
 
-    // payload
+    // Build canonical payload (adapter)
     const payload = DMHCAdapter.buildPayload({
       ...State.data,
       fullName,
       email,
       phone
     });
+
     payload.photos = photos;
 
     setLoadingLine_("Sending securely…");
