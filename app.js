@@ -624,17 +624,34 @@ function Loading() {
 }
 
 function startLoadingQuotes() {
+  // reset
   State.ui.loadingQuoteIdx = 0;
 
-  const tick = () => {
-    const el = document.getElementById("loadingLine");
-    if (!el) return;
-    State.ui.loadingQuoteIdx = (State.ui.loadingQuoteIdx + 1) % LOADING_QUOTES.length;
-    el.textContent = LOADING_QUOTES[State.ui.loadingQuoteIdx];
-  };
+  const el = document.getElementById("loadingLine");
+  if (!el) return;
 
-  // readable speed
-  State.ui.loadingTimer = setInterval(tick, 2300);
+  // set first line immediately
+  el.textContent = LOADING_QUOTES[0];
+
+  // rotate through each quote ONCE, then stop
+  const maxIdx = LOADING_QUOTES.length - 1;
+
+  State.ui.loadingTimer = setInterval(() => {
+    // if user navigated away, stop
+    if (Steps[State.step] !== "loading") {
+      stopLoadingTimer();
+      return;
+    }
+
+    // advance
+    State.ui.loadingQuoteIdx = Math.min(State.ui.loadingQuoteIdx + 1, maxIdx);
+    el.textContent = LOADING_QUOTES[State.ui.loadingQuoteIdx];
+
+    // once we hit the last quote, stop cycling
+    if (State.ui.loadingQuoteIdx >= maxIdx) {
+      stopLoadingTimer();
+    }
+  }, 2300);
 }
 
 function stopLoadingTimer() {
