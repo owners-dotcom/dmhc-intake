@@ -835,8 +835,7 @@ async function submitForm() {
   const email = (State.data.email || "").trim();
   const phone = (State.data.phone || "").trim();
 
-  // TEMP: keep light validation (fast iteration)
-  // Enforced: identity + MIN_PHOTOS
+  // Enforced: identity + MIN_CURRENT_PHOTOS
   if (!fullName) return setReviewError_("Please add your name, then submit again.");
   if (!isEmailish(email)) return setReviewError_("That email looks a little off — please double-check it.");
   if (!phone) return setReviewError_("Please add a phone number so we can reach you.");
@@ -854,21 +853,24 @@ async function submitForm() {
   goToStep(Steps.indexOf("loading"));
 
   try {
-    // 1) Normalize photos to File objects (supports {file: File} just in case)
-    const picked = normalizeToFileList_(getSelectedFiles_()).slice(0, MAX_PHOTOS);
+    // 1) Normalize photos to File objects
+    const picked = normalizeToFileList_(getSelectedFiles_()).slice(0, MAX_TOTAL_PHOTOS);
 
-    if (picked.length < MIN_PHOTOS) {
+    if (picked.length < MIN_CURRENT_PHOTOS) {
       State.ui.submitting = false;
       goToStep(Steps.indexOf("review"));
       return setReviewError_("Please add at least one photo of your current hair.");
     }
 
-    // 2) Compress to JPEG base64 (no prefix) in the order picked
+    // 2) Compress to JPEG base64 (no prefix)
     const photos = [];
+
     for (let i = 0; i < picked.length; i++) {
       setLoadingLine_(`Optimizing photo ${i + 1} of ${picked.length}…`);
       const f = picked[i];
+
       const base64 = await compressToJpegBase64_(f, MAX_EDGE_PX, JPEG_QUALITY);
+
       photos.push({
         originalName: f.name || "upload.jpg",
         mime: "image/jpeg",
@@ -876,7 +878,7 @@ async function submitForm() {
       });
     }
 
-    // 3) Build canonical payload (adapter)
+    // 3) Build canonical payload
     const payload = DMHCAdapter.buildPayload({
       ...State.data,
       fullName,
@@ -901,8 +903,8 @@ async function submitForm() {
 
     clearTimeout(timeoutId);
 
-    // GAS may respond JSON or text
     let out = null;
+
     try {
       out = await res.json();
     } catch (e) {
@@ -912,8 +914,7 @@ async function submitForm() {
     State.ui.submitting = false;
 
     if (out && out.ok) {
-      // restore quote mode for future non-submit visits to loading (if any)
-      State.ui.loadingMode = "quotes";
+      State.ui.loadingMode = "quotes"; // restore default mode
       goToStep(Steps.indexOf("thankyou"));
       return;
     }
@@ -922,10 +923,9 @@ async function submitForm() {
       ? String(out.message)
       : "We didn’t get a clean confirmation. Tap Try Again once.";
 
-    // keep them on loading with retry (prevents panic double-submit from the review screen)
     showLoadingRetry_(msg);
+
   } catch (err) {
-    // AbortController timeout or slow mobile network
     if (err && err.name === "AbortError") {
       State.ui.submitting = false;
       showLoadingRetry_("Still working on it — mobile uploads can be slow sometimes. Tap Try Again once.");
@@ -933,7 +933,6 @@ async function submitForm() {
     }
 
     State.ui.submitting = false;
-    // other unexpected errors: route back to review
     goToStep(Steps.indexOf("review"));
     setReviewError_("Something hiccuped on our side. Please tap Submit again.");
   }
