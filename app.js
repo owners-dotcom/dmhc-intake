@@ -504,12 +504,24 @@ function bindPhotoInteractions() {
     await renderThumbs(State.data.currentPhotos, thumbsCurrent);
   });
 
-  fileInspo.addEventListener("change", async () => {
-    const f = (fileInspo.files && fileInspo.files[0]) ? fileInspo.files[0] : null;
-    State.data.inspoPhoto = normalizeOneFile_(f);
-    if (metaInspo) metaInspo.textContent = State.data.inspoPhoto ? "1 selected" : "None selected";
-    await renderThumbs(State.data.inspoPhoto ? [State.data.inspoPhoto] : [], thumbsInspo);
-  });
+  fileCurrent.addEventListener("change", async () => {
+  const newlyPicked = normalizeToFileList_(Array.from(fileCurrent.files || []));
+  const existing = normalizeToFileList_(State.data.currentPhotos || []);
+
+  // append + dedupe + cap
+  State.data.currentPhotos = mergeFilesDedupCap_(existing, newlyPicked, MAX_PHOTOS);
+
+  // allow re-picking the same file to trigger change again
+  fileCurrent.value = "";
+
+  if (metaCurrent) {
+    metaCurrent.textContent = State.data.currentPhotos.length
+      ? `${State.data.currentPhotos.length} selected`
+      : "None selected";
+  }
+
+  await renderThumbs(State.data.currentPhotos, thumbsCurrent);
+});
 
   // initial thumbs (no re-render)
   renderThumbs(normalizeToFileList_(State.data.currentPhotos || []), thumbsCurrent);
@@ -987,6 +999,24 @@ function clampNumber_(n, min, max) {
   const x = Number(n);
   if (Number.isNaN(x)) return min;
   return Math.max(min, Math.min(max, x));
+}
+
+function mergeFilesDedupCap_(a, b, cap) {
+  const out = [];
+  const seen = new Set();
+
+  const push = (f) => {
+    if (!(f instanceof File)) return;
+    const key = `${f.name}::${f.size}::${f.lastModified}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push(f);
+  };
+
+  for (const f of (Array.isArray(a) ? a : [])) push(f);
+  for (const f of (Array.isArray(b) ? b : [])) push(f);
+
+  return out.slice(0, Math.max(0, Number(cap) || 0));
 }
 
 function escapeHtml(str) {
