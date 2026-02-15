@@ -33,13 +33,13 @@ const State = {
     phone: "",
     service: "",
     lastColor: "",
-    currentPhotos: [], // SHOULD be File objects
-    inspoPhoto: null,  // SHOULD be File (or null)
+    currentPhotos: [], // File[]
+    inspoPhoto: null,  // File|null
 
-    // future / optional (adapter will pick if you add UI later)
+    // future / optional
     fullName: "",
     preferredStylist: "",
-    services: [], // optional array
+    services: [],
     goals: "",
     lastColorDate: "",
     boxDye: "",
@@ -48,18 +48,21 @@ const State = {
     hairLength: "",
     maintenanceFrequency: "",
     referralSource: "",
-    company: "" // honeypot
+    company: ""
   },
   ui: {
     error: "",
     reviewError: "",
+
     splashTimer: null,
+
+    // loading quotes rotator
     loadingTimer: null,
     loadingQuoteIdx: 0,
 
-    // NEW (needed by submit/loading UX)
+    // submit/try-again flow
     submitting: false,
-    loadingMode: "quotes",      // "quotes" | "submit"
+    loadingMode: "quotes",     // "quotes" | "submit"
     showLoadingRetry: false,
     loadingRetryMsg: ""
   }
@@ -172,10 +175,10 @@ function render() {
   if (current === "photos") bindPhotoInteractions();
 
   if (current === "loading") {
-    // always bind retry button (if present)
+    // wire retry button (if shown)
     bindLoadingInteractions_();
 
-    // only run quote loop when NOT in submit-mode
+    // only rotate quotes when not actively submitting
     if (State.ui.loadingMode !== "submit") {
       startLoadingQuotes();
     }
@@ -184,7 +187,6 @@ function render() {
   if (current === "splash") {
     startSplashAutoAdvance();
   }
-
 }
 
 /* ==============================
@@ -826,22 +828,19 @@ async function submitForm() {
   const email = (State.data.email || "").trim();
   const phone = (State.data.phone || "").trim();
 
-  // validate identity
   if (!fullName) return setReviewError_("Please add your name, then submit again.");
   if (!isEmailish(email)) return setReviewError_("That email looks a little off — please double-check it.");
   if (!phone) return setReviewError_("Please add a phone number so we can reach you.");
 
-  // validate photos: at least 1 CURRENT
+  // Must have at least 1 CURRENT photo (inspo optional)
   const currentCount = normalizeToFileList_(State.data.currentPhotos || []).slice(0, MAX_CURRENT_PHOTOS).length;
   if (currentCount < MIN_CURRENT_PHOTOS) {
     return setReviewError_("Please add at least one photo of your current hair.");
   }
 
-  // prevent double submit taps
   if (State.ui.submitting) return;
   State.ui.submitting = true;
 
-  // Loading screen in "submit" mode (no looping quotes)
   State.ui.loadingMode = "submit";
   State.ui.showLoadingRetry = false;
   State.ui.loadingRetryMsg = "";
@@ -849,18 +848,8 @@ async function submitForm() {
   goToStep(Steps.indexOf("loading"));
 
   try {
-    // Build picked list in correct order and enforce caps
-    const picked = getSelectedFiles_().slice(0, MAX_TOTAL_PHOTOS);
+    const picked = normalizeToFileList_(getSelectedFiles_()).slice(0, MAX_TOTAL_PHOTOS);
 
-    // extra safety
-    const safeCurrent = normalizeToFileList_(State.data.currentPhotos || []).slice(0, MAX_CURRENT_PHOTOS);
-    if (safeCurrent.length < MIN_CURRENT_PHOTOS) {
-      State.ui.submitting = false;
-      goToStep(Steps.indexOf("review"));
-      return setReviewError_("Please add at least one photo of your current hair.");
-    }
-
-    // Compress to JPEG base64 (no prefix)
     const photos = [];
     for (let i = 0; i < picked.length; i++) {
       setLoadingLine_(`Optimizing photo ${i + 1} of ${picked.length}…`);
@@ -873,20 +862,18 @@ async function submitForm() {
       });
     }
 
-    // Build canonical payload (adapter)
     const payload = DMHCAdapter.buildPayload({
       ...State.data,
       fullName,
       email,
       phone
     });
-
     payload.photos = photos;
 
     setLoadingLine_("Sending securely…");
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    const timeoutId = setTimeout(() => controller.abort(), 45000);
 
     const res = await fetch(APPS_SCRIPT_URL, {
       method: "POST",
@@ -918,13 +905,13 @@ async function submitForm() {
 
     showLoadingRetry_(msg);
   } catch (err) {
+    State.ui.submitting = false;
+
     if (err && err.name === "AbortError") {
-      State.ui.submitting = false;
-      showLoadingRetry_("Still working on it — mobile uploads can be slow sometimes. Tap Try Again once.");
+      showLoadingRetry_("Still working on it — mobile uploads can be slow. Tap Try Again once.");
       return;
     }
 
-    State.ui.submitting = false;
     goToStep(Steps.indexOf("review"));
     setReviewError_("Something hiccuped on our side. Please tap Submit again.");
   }
