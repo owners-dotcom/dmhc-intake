@@ -184,7 +184,6 @@ function render() {
   if (current === "splash") {
     startSplashAutoAdvance();
   }
-}
 
 }
 
