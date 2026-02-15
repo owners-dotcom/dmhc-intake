@@ -69,6 +69,30 @@ const State = {
 };
 
 /* ==============================
+   STEPS + LOADING COPY
+============================== */
+
+const Steps = [
+  "splash",
+  "welcome",
+  "basics",
+  "services",
+  "history",
+  "photos",
+  "review",
+  "loading",
+  "thankyou"
+];
+
+const LOADING_QUOTES = [
+  "Uploading photos…",
+  "Optimizing images…",
+  "Sending your details…",
+  "Finishing up…",
+  "Still uploading — hang tight…"
+];
+
+/* ==============================
    INIT
 ============================== */
 
