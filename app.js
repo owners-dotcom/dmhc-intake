@@ -185,6 +185,7 @@ function render() {
     startSplashAutoAdvance();
   }
 }
+}
 
 /* ==============================
    PROGRESS
