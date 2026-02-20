@@ -812,11 +812,12 @@ function startLoadingQuotes() {
   if (!el) return;
 
   // set first line immediately
-  el.textContent = LOADING_QUOTES[0];
+  el.textContent = LOADING_QUOTES[0] || "Getting things ready…";
 
   // rotate through each quote ONCE, then stop
-  const maxIdx = LOADING_QUOTES.length - 1;
+  const maxIdx = (LOADING_QUOTES?.length || 1) - 1;
 
+  stopLoadingTimer();
   State.ui.loadingTimer = setInterval(() => {
     if (Steps[State.step] !== "loading") {
       stopLoadingTimer();
@@ -824,30 +825,12 @@ function startLoadingQuotes() {
     }
 
     State.ui.loadingQuoteIdx = Math.min(State.ui.loadingQuoteIdx + 1, maxIdx);
-    el.textContent = LOADING_QUOTES[State.ui.loadingQuoteIdx];
+    el.textContent = LOADING_QUOTES[State.ui.loadingQuoteIdx] || el.textContent;
 
     if (State.ui.loadingQuoteIdx >= maxIdx) {
       stopLoadingTimer();
     }
   }, 2600);
-}
-
-function stopLoadingTimer() {
-  if (State.ui.loadingTimer) {
-    clearInterval(State.ui.loadingTimer);
-    State.ui.loadingTimer = null;
-  }
-}
-
-function ThankYou() {
-  const div = document.createElement("div");
-
-  div.innerHTML = `
-    <h1>Thank you.</h1>
-    <p class="muted">We’ll review everything and reach out soon.</p>
-  `;
-
-  return div;
 }
 
 /* ==============================
@@ -879,7 +862,6 @@ function ensureAppShell_(app) {
   const viewport = document.createElement("div");
   viewport.className = "app-viewport";
 
-  // mount
   shell.appendChild(header);
   shell.appendChild(progress);
   shell.appendChild(viewport);
@@ -902,31 +884,22 @@ function renderHeader_(app, currentStepName) {
 }
 
 function buildDynamicHeaderLine_(currentStepName) {
-  // Minimal, “luxury calm” cues. No icons. No bullets. No abrupt swaps.
   const service = (State.data.service || (Array.isArray(State.data.services) ? (State.data.services[0] || "") : "") || "").trim();
   const name = (State.data.fullName || State.data.name || "").trim();
 
   switch (currentStepName) {
-    case "splash":
-      return "Preparing your consultation…";
-    case "welcome":
-      return "A quick, curated intake.";
-    case "basics":
-      return "Your details — so we can follow up.";
-    case "services":
-      return service ? `Focused on: ${service}` : "Choose what feels closest.";
-    case "history":
-      return "A little context goes a long way.";
-    case "photos":
-      return "Photos help us plan precisely.";
-    case "review":
-      return name ? `All set, ${name}. One last look.` : "All set. One last look.";
-    case "loading":
-      return "Submitting securely…";
-    case "thankyou":
-      return "Received. We’ll review and follow up.";
-    default:
-      return "";
+    case "splash":   return "Preparing your consultation…";
+    case "welcome":  return "A quick, curated intake.";
+    case "basics":   return "Your details — so we can follow up.";
+    case "services": return service ? `Focused on: ${service}` : "Choose what feels closest.";
+    case "changeSize": return "Dial in the outcome.";
+    case "extras":   return "Optional details to plan well.";
+    case "history":  return "A little context goes a long way.";
+    case "photos":   return "Photos help us plan precisely.";
+    case "review":   return name ? `All set, ${name}. One last look.` : "All set. One last look.";
+    case "loading":  return "Submitting securely…";
+    case "thankyou": return "Received. We’ll review and follow up.";
+    default:         return "";
   }
 }
 
@@ -934,13 +907,12 @@ function swapScreen_(app, node) {
   const vp = app.__dmshell?.viewport;
   if (!vp) return;
 
-  // Clear
   if (!node) {
     vp.innerHTML = "";
     return;
   }
 
-  // One-time viewport setup (prevents visible layout jumps)
+  // one-time viewport setup
   if (!vp.__dmSwapInit) {
     vp.__dmSwapInit = true;
     vp.style.position = "relative";
@@ -950,46 +922,38 @@ function swapScreen_(app, node) {
 
   const prev = vp.firstElementChild;
 
-  // Wrap next screen
   const nextWrap = document.createElement("div");
   nextWrap.className = "screen";
   nextWrap.appendChild(node);
 
-  // Put next screen in DOM but hidden, so we can measure it *fully* before showing
+  // mount hidden to measure fully
   nextWrap.style.position = "absolute";
   nextWrap.style.inset = "0";
   nextWrap.style.width = "100%";
   nextWrap.style.visibility = "hidden";
   nextWrap.style.opacity = "0";
 
-  // If we have a previous screen, force it to overlay too
   if (prev) {
     prev.style.position = "absolute";
     prev.style.inset = "0";
     prev.style.width = "100%";
   }
 
-  // Mount next (still hidden)
   vp.appendChild(nextWrap);
 
-  // Force a layout pass so next height is final BEFORE we show it
   const prevH = prev ? prev.getBoundingClientRect().height : 0;
   const nextH = nextWrap.getBoundingClientRect().height;
 
-  // Lock container height during transition (prevents "middle-out" snap)
   const startH = Math.max(1, prevH || nextH);
   vp.style.height = startH + "px";
 
-  // Now reveal next (still transparent) and animate
   nextWrap.style.visibility = "visible";
 
-  // Height morph (subtle)
   const hAnim = vp.animate(
     [{ height: startH + "px" }, { height: nextH + "px" }],
     { duration: 220, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)", fill: "forwards" }
   );
 
-  // Crossfade (no translate)
   nextWrap.animate(
     [{ opacity: 0 }, { opacity: 1 }],
     { duration: 220, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)", fill: "forwards" }
@@ -1002,52 +966,21 @@ function swapScreen_(app, node) {
     );
   }
 
-  // Cleanup after transition
   const cleanup = () => {
     if (prev && prev.parentNode === vp) vp.removeChild(prev);
 
-    // Make next normal-flow again
     nextWrap.style.position = "";
     nextWrap.style.inset = "";
     nextWrap.style.width = "";
     nextWrap.style.opacity = "";
+    nextWrap.style.visibility = "";
 
-    // Release the height lock
     vp.style.height = "";
     vp.style.overflow = "";
   };
 
-  // Run cleanup when height animation finishes (best proxy)
   hAnim.onfinish = cleanup;
-
-  // Safety cleanup (in case onfinish doesn't fire on some mobile browsers)
   setTimeout(cleanup, 260);
-}
-
-    // Fade old out
-    prev.animate(
-      [{ opacity: 1 }, { opacity: 0 }],
-      {
-        duration: 160,
-        easing: "ease",
-        fill: "forwards"
-      }
-    );
-
-    setTimeout(() => {
-      if (prev.parentNode === vp) vp.removeChild(prev);
-
-      // 3️⃣ Release height lock AFTER new settles
-      nextWrap.style.position = "";
-      vp.style.height = "";
-      vp.style.overflow = "";
-    }, 220);
-
-  } catch (e) {
-    if (prev.parentNode === vp) vp.removeChild(prev);
-    vp.style.height = "";
-    vp.style.overflow = "";
-  }
 }
 
 /* ==============================
