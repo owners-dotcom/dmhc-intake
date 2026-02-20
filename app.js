@@ -834,7 +834,7 @@ function startLoadingQuotes() {
   el.textContent = LOADING_QUOTES[0] || "Getting things ready…";
 
   // rotate through each quote ONCE, then stop
-  const maxIdx = (LOADING_QUOTES?.length || 1) - 1;
+  const maxIdx = ((LOADING_QUOTES && LOADING_QUOTES.length) ? LOADING_QUOTES.length : 1) - 1;
 
   stopLoadingTimer();
   State.ui.loadingTimer = setInterval(() => {
