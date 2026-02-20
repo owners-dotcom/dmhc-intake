@@ -112,8 +112,16 @@ document.addEventListener("DOMContentLoaded", () => {
 Object.assign(window, {
   next,
   back,
-  selectService,
-  submitForm
+  goToStep,
+  submitForm,
+
+  // NEW service flow
+  selectIntent,
+  selectChangeSize,
+  selectHaircut,
+
+  // Legacy safety bridge (prevents old onclick crash if anything lingers)
+  selectService
 });
 
   // Keep browser back/forward inside the flow
@@ -484,6 +492,17 @@ function selectIntent(intent) {
   State.data.services = [legacy];
 
   next(); // -> change
+}
+
+function selectService(service) {
+  const map = {
+    "Blonding": "lighter",
+    "Dimensional Color": "refresh",
+    "All-Over / Gray Coverage": "gray",
+    "Color Correction": "fix",
+    "Not Sure": "unsure"
+  };
+  selectIntent(map[String(service)] || "unsure");
 }
 
 function ChangeSize() {
