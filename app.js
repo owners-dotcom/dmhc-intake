@@ -933,12 +933,8 @@ function swapScreen_(app, node) {
   const vp = app.__dmshell?.viewport;
   if (!vp) return;
 
-  if (!node) {
-    vp.innerHTML = "";
-    return;
-  }
+  if (!node) { vp.innerHTML = ""; return; }
 
-  // one-time viewport setup
   if (!vp.__dmSwapInit) {
     vp.__dmSwapInit = true;
     vp.style.position = "relative";
@@ -950,60 +946,49 @@ function swapScreen_(app, node) {
 
   const nextWrap = document.createElement("div");
   nextWrap.className = "screen";
+  nextWrap.style.width = "100%";
+  nextWrap.style.boxSizing = "border-box";
   nextWrap.appendChild(node);
+  vp.appendChild(nextWrap);
 
-  // mount hidden to measure fully
+  if (!prev) return;
+
+  prev.style.position = "absolute";
+  prev.style.inset = "0";
+  prev.style.width = "100%";
+
   nextWrap.style.position = "absolute";
   nextWrap.style.inset = "0";
   nextWrap.style.width = "100%";
-  nextWrap.style.visibility = "hidden";
   nextWrap.style.opacity = "0";
+  nextWrap.style.transform = "translateX(10px)";
 
-  if (prev) {
-    prev.style.position = "absolute";
-    prev.style.inset = "0";
-    prev.style.width = "100%";
-  }
+  const cleanup = () => {
+    if (prev && prev.parentNode === vp) vp.removeChild(prev);
+    nextWrap.style.position = "";
+    nextWrap.style.inset = "";
+    nextWrap.style.transform = "";
+    nextWrap.style.opacity = "";
+  };
 
-  vp.appendChild(nextWrap);
+  try {
+    const inAnim = nextWrap.animate(
+      [{ opacity: 0, transform: "translateX(10px)" }, { opacity: 1, transform: "translateX(0px)" }],
+      { duration: 200, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)", fill: "forwards" }
+    );
 
-  const prevH = prev ? prev.getBoundingClientRect().height : 0;
-  const nextH = nextWrap.getBoundingClientRect().height;
-
-  const startH = Math.max(1, prevH || nextH);
-  vp.style.height = startH + "px";
-
-  nextWrap.style.visibility = "visible";
-
-  const hAnim = vp.animate(
-    [{ height: startH + "px" }, { height: nextH + "px" }],
-    { duration: 220, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)", fill: "forwards" }
-  );
-
-  nextWrap.animate(
-    [{ opacity: 0 }, { opacity: 1 }],
-    { duration: 220, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)", fill: "forwards" }
-  );
-
-  if (prev) {
     prev.animate(
       [{ opacity: 1 }, { opacity: 0 }],
       { duration: 160, easing: "ease", fill: "forwards" }
     );
+
+    inAnim.onfinish = cleanup;
+    setTimeout(cleanup, 260);
+
+  } catch (e) {
+    cleanup();
   }
-
-  const cleanup = () => {
-    if (prev && prev.parentNode === vp) vp.removeChild(prev);
-
-    nextWrap.style.position = "";
-    nextWrap.style.inset = "";
-    nextWrap.style.width = "";
-    nextWrap.style.opacity = "";
-    nextWrap.style.visibility = "";
-
-    vp.style.height = "";
-    vp.style.overflow = "";
-  };
+}
 
   hAnim.onfinish = cleanup;
   setTimeout(cleanup, 260);
