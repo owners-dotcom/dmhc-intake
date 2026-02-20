@@ -79,6 +79,8 @@ const Steps = [
   "welcome",
   "basics",
   "services",
+  "changeSize",
+  "extras",
   "history",
   "photos",
   "review",
@@ -212,6 +214,8 @@ function render() {
     case "welcome": node = Welcome(); break;
     case "basics": node = Basics(); break;
     case "services": node = Services(); break;
+    case "changeSize": node = ChangeSize(); break;
+    case "extras": node = Extras(); break;
     case "history": node = History(); break;
     case "photos": node = Photos(); break;
     case "review": node = Review(); break;
