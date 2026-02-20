@@ -852,6 +852,13 @@ function startLoadingQuotes() {
   }, 2600);
 }
 
+function stopLoadingTimer() {
+  if (State.ui.loadingTimer) {
+    clearInterval(State.ui.loadingTimer);
+    State.ui.loadingTimer = null;
+  }
+}
+
 /* ==============================
    RENDER HELPERS (STATIC HEADER + SLIDE SWAP)
 ============================== */
