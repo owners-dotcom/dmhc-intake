@@ -880,17 +880,19 @@ function swapScreen_(app, node) {
 
   try {
     // Animate new in
-    nextWrap.animate(
-      [
-        { opacity: 0, transform: "translateX(6px)" },
-        { opacity: 1, transform: "translateX(0px)" }
-      ],
-      {
-        duration: 220,
-        easing: "cubic-bezier(0.2, 0.8, 0.2, 1)",
-        fill: "forwards"
-      }
-    );
+nextWrap.style.opacity = "0";
+
+nextWrap.animate(
+  [
+    { opacity: 0 },
+    { opacity: 1 }
+  ],
+  {
+    duration: 180,
+    easing: "ease-out",
+    fill: "forwards"
+  }
+);
 
     // Fade old out
     prev.animate(
