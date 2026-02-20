@@ -63,6 +63,8 @@ const State = {
     // submit/try-again flow
     submitting: false,
     loadingMode: "quotes",     // "quotes" | "submit"
+    _renderQueued: false,
+    _navDir: 1,
     showLoadingRetry: false,
     loadingRetryMsg: ""
   }
@@ -140,15 +142,26 @@ function syncHistory(replace = false) {
 }
 
 /* ==============================
-   NAV
+   NAV (HARDENED)
 ============================== */
 
-function goToStep(stepIndex) {
+function goToStep(stepIndex, opts = {}) {
+  const nextStep = clamp(stepIndex, 0, Steps.length - 1);
+  if (nextStep === State.step) return; // no-op prevents flicker
+
+  // record direction for swap animation
+  State.ui._navDir = (nextStep > State.step) ? 1 : -1;
+
   State.ui.error = "";
   State.ui.reviewError = "";
-  State.step = clamp(stepIndex, 0, Steps.length - 1);
-  syncHistory();
-  render();
+
+  State.step = nextStep;
+
+  // history update (allow disabling if needed later)
+  if (opts.skipHistory !== true) syncHistory();
+
+  // batch render to next animation frame to avoid double paint/blank flash
+  scheduleRender_();
 }
 
 function next() {
@@ -157,6 +170,20 @@ function next() {
 
 function back() {
   goToStep(State.step - 1);
+}
+
+/* ==============================
+   RENDER SCHEDULER (ANTI-FLICKER)
+============================== */
+
+function scheduleRender_() {
+  if (State.ui._renderQueued) return;
+  State.ui._renderQueued = true;
+
+  requestAnimationFrame(() => {
+    State.ui._renderQueued = false;
+    render();
+  });
 }
 
 /* ==============================
@@ -831,8 +858,8 @@ function swapScreen_(app, node) {
   const prev = vp.firstElementChild;
   const prevStep = typeof State.ui._lastRenderedStep === "number" ? State.ui._lastRenderedStep : null;
 
-  // Direction inference (fallback: forward)
-  const dir = (prevStep == null) ? 1 : (State.step >= prevStep ? 1 : -1);
+  // Direction from nav (fallback: forward)
+const dir = (State.ui && State.ui._navDir === -1) ? -1 : 1;
 
   // First render: no animation
   if (!prev) {
