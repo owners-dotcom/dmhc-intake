@@ -163,6 +163,9 @@ function back() {
    RENDER
 ============================== */
 
+// Build the shell ONCE (static header + viewport). Then only swap the screen.
+// This prevents flicker, enables smooth transitions, and keeps the header “anchored”.
+
 function render() {
   stopSplashTimer();
   stopLoadingTimer();
@@ -170,14 +173,12 @@ function render() {
   const app = document.getElementById("app");
   if (!app) return;
 
-  app.innerHTML = "";
-  renderProgress(app);
-
-  const screen = document.createElement("div");
-  screen.className = "screen";
+  // 1) Ensure shell exists (header stays static, content slides)
+  ensureAppShell_(app);
 
   const current = Steps[State.step];
 
+  // 2) Build the next screen node (same as before)
   let node = null;
   switch (current) {
     case "splash": node = Splash(); break;
@@ -191,10 +192,14 @@ function render() {
     case "thankyou": node = ThankYou(); break;
   }
 
-  if (node) screen.appendChild(node);
-  app.appendChild(screen);
+  // 3) Update header + progress (header is static; content changes)
+  renderHeader_(app, current);
+  renderProgress_(app, current);
 
-  // Post-render hooks (NO re-render while typing)
+  // 4) Swap screen with a quick “Tinder-like” slide (no CSS required)
+  swapScreen_(app, node);
+
+  // 5) Post-render hooks (NO re-render while typing)
   if (current === "basics") bindBasicsInteractions();
   if (current === "photos") bindPhotoInteractions();
 
@@ -211,30 +216,26 @@ function render() {
   if (current === "splash") {
     startSplashAutoAdvance();
   }
+
+  // mark last rendered step for direction inference next time
+  State.ui._lastRenderedStep = State.step;
 }
 
 /* ==============================
    PROGRESS
 ============================== */
 
-function renderProgress(app) {
-  const wrapper = document.createElement("div");
-  wrapper.className = "progress";
-
-  const fill = document.createElement("div");
-  fill.className = "progress-fill";
+function renderProgress_(app, currentStepName) {
+  const fill = app.__dmshell?.progressFill;
+  if (!fill) return;
 
   // do not count splash/loading/thankyou as progress
   const progressSteps = ["welcome", "basics", "services", "history", "photos", "review"];
-  const current = Steps[State.step];
-  const idx = progressSteps.indexOf(current);
+  const idx = progressSteps.indexOf(currentStepName);
   const denom = Math.max(progressSteps.length - 1, 1);
   const percent = idx < 0 ? 0 : (idx / denom) * 100;
 
   fill.style.width = Math.min(Math.max(percent, 0), 100) + "%";
-
-  wrapper.appendChild(fill);
-  app.appendChild(wrapper);
 }
 
 /* ==============================
@@ -731,6 +732,150 @@ function ThankYou() {
   `;
 
   return div;
+}
+
+/* ==============================
+   RENDER HELPERS (STATIC HEADER + SLIDE SWAP)
+============================== */
+
+function ensureAppShell_(app) {
+  if (app.__dmshell) return;
+
+  // wipe once
+  app.innerHTML = "";
+
+  const shell = document.createElement("div");
+  shell.className = "app-shell";
+
+  const header = document.createElement("div");
+  header.className = "app-header";
+  header.innerHTML = `
+    <div class="app-brand">Danielle Marie Hair Co.</div>
+    <div class="app-dynamic muted" id="appDynamicLine"></div>
+  `;
+
+  const progress = document.createElement("div");
+  progress.className = "progress";
+  const fill = document.createElement("div");
+  fill.className = "progress-fill";
+  progress.appendChild(fill);
+
+  const viewport = document.createElement("div");
+  viewport.className = "app-viewport";
+
+  // mount
+  shell.appendChild(header);
+  shell.appendChild(progress);
+  shell.appendChild(viewport);
+  app.appendChild(shell);
+
+  app.__dmshell = {
+    shell,
+    header,
+    progress,
+    progressFill: fill,
+    viewport,
+    dynamicLine: header.querySelector("#appDynamicLine")
+  };
+}
+
+function renderHeader_(app, currentStepName) {
+  const el = app.__dmshell?.dynamicLine;
+  if (!el) return;
+  el.textContent = buildDynamicHeaderLine_(currentStepName);
+}
+
+function buildDynamicHeaderLine_(currentStepName) {
+  // Minimal, “luxury calm” cues. No icons. No bullets. No abrupt swaps.
+  const service = (State.data.service || (Array.isArray(State.data.services) ? (State.data.services[0] || "") : "") || "").trim();
+  const name = (State.data.fullName || State.data.name || "").trim();
+
+  switch (currentStepName) {
+    case "splash":
+      return "Preparing your consultation…";
+    case "welcome":
+      return "A quick, curated intake.";
+    case "basics":
+      return "Your details — so we can follow up.";
+    case "services":
+      return service ? `Focused on: ${service}` : "Choose what feels closest.";
+    case "history":
+      return "A little context goes a long way.";
+    case "photos":
+      return "Photos help us plan precisely.";
+    case "review":
+      return name ? `All set, ${name}. One last look.` : "All set. One last look.";
+    case "loading":
+      return "Submitting securely…";
+    case "thankyou":
+      return "Received. We’ll review and follow up.";
+    default:
+      return "";
+  }
+}
+
+function swapScreen_(app, node) {
+  const vp = app.__dmshell?.viewport;
+  if (!vp) return;
+
+  // If node is null, clear
+  if (!node) {
+    vp.innerHTML = "";
+    return;
+  }
+
+  const nextWrap = document.createElement("div");
+  nextWrap.className = "screen";
+  nextWrap.appendChild(node);
+
+  const prev = vp.firstElementChild;
+  const prevStep = typeof State.ui._lastRenderedStep === "number" ? State.ui._lastRenderedStep : null;
+
+  // Direction inference (fallback: forward)
+  const dir = (prevStep == null) ? 1 : (State.step >= prevStep ? 1 : -1);
+
+  // First render: no animation
+  if (!prev) {
+    vp.appendChild(nextWrap);
+    return;
+  }
+
+  // Web Animations API (no CSS changes needed)
+  // Keep it subtle and fast.
+  const inFromX = dir === 1 ? "14px" : "-14px";
+  const outToX  = dir === 1 ? "-10px" : "10px";
+
+  // mount new above old
+  vp.appendChild(nextWrap);
+
+  try {
+    prev.animate(
+      [
+        { transform: "translateX(0px)", opacity: 1 },
+        { transform: `translateX(${outToX})`, opacity: 0 }
+      ],
+      { duration: 180, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)", fill: "forwards" }
+    );
+
+    const animIn = nextWrap.animate(
+      [
+        { transform: `translateX(${inFromX})`, opacity: 0 },
+        { transform: "translateX(0px)", opacity: 1 }
+      ],
+      { duration: 220, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)", fill: "forwards" }
+    );
+
+    animIn.onfinish = () => {
+      // remove old
+      if (prev && prev.parentNode === vp) vp.removeChild(prev);
+      // clean inline transforms left by WAAPI
+      nextWrap.style.transform = "";
+      nextWrap.style.opacity = "";
+    };
+  } catch (e) {
+    // If WAAPI unavailable, hard swap
+    if (prev && prev.parentNode === vp) vp.removeChild(prev);
+  }
 }
 
 /* ==============================
