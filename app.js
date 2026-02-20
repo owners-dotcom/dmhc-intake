@@ -870,11 +870,11 @@ function swapScreen_(app, node) {
 
   // 2️⃣ Mount new absolutely
   nextWrap.style.position = "absolute";
-  nextWrap.style.top = "0";
-  nextWrap.style.left = "0";
+  nextWrap.style.inset = "0";        // locks all sides
   nextWrap.style.width = "100%";
+  nextWrap.style.boxSizing = "border-box";
   nextWrap.style.opacity = "0";
-  nextWrap.style.transform = "translateX(8px)";
+  nextWrap.style.transform = "translateX(6px)";
 
   vp.appendChild(nextWrap);
 
@@ -882,7 +882,7 @@ function swapScreen_(app, node) {
     // Animate new in
     nextWrap.animate(
       [
-        { opacity: 0, transform: "translateX(8px)" },
+        { opacity: 0, transform: "translateX(6px)" },
         { opacity: 1, transform: "translateX(0px)" }
       ],
       {
