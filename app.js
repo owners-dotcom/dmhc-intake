@@ -261,7 +261,7 @@ function renderProgress_(app, currentStepName) {
   if (!fill) return;
 
   // do not count splash/loading/thankyou as progress
-  const progressSteps = ["welcome", "basics", "services", "history", "photos", "review"];
+  const progressSteps = ["welcome", "basics", "services", "changeSize", "extras", "history", "photos", "review"];
   const idx = progressSteps.indexOf(currentStepName);
   const denom = Math.max(progressSteps.length - 1, 1);
   const percent = idx < 0 ? 0 : (idx / denom) * 100;
