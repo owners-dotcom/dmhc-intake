@@ -845,7 +845,6 @@ function swapScreen_(app, node) {
   const vp = app.__dmshell?.viewport;
   if (!vp) return;
 
-  // If node is null, clear
   if (!node) {
     vp.innerHTML = "";
     return;
@@ -856,52 +855,59 @@ function swapScreen_(app, node) {
   nextWrap.appendChild(node);
 
   const prev = vp.firstElementChild;
-  const prevStep = typeof State.ui._lastRenderedStep === "number" ? State.ui._lastRenderedStep : null;
 
-  // Direction from nav (fallback: forward)
-const dir = (State.ui && State.ui._navDir === -1) ? -1 : 1;
-
-  // First render: no animation
+  // First render — no animation
   if (!prev) {
     vp.appendChild(nextWrap);
     return;
   }
 
-  // Web Animations API (no CSS changes needed)
-  // Keep it subtle and fast.
-  const inFromX = dir === 1 ? "14px" : "-14px";
-  const outToX  = dir === 1 ? "-10px" : "10px";
-
-  // mount new above old
+  // Mount new above old
   vp.appendChild(nextWrap);
 
+  // Start with new invisible but present
+  nextWrap.style.opacity = "0";
+  nextWrap.style.transform = "translateX(8px)";
+
   try {
+    // Animate new IN
+    nextWrap.animate(
+      [
+        { opacity: 0, transform: "translateX(8px)" },
+        { opacity: 1, transform: "translateX(0px)" }
+      ],
+      {
+        duration: 220,
+        easing: "cubic-bezier(0.2, 0.8, 0.2, 1)",
+        fill: "forwards"
+      }
+    );
+
+  // Fade old OUT
     prev.animate(
       [
-        { transform: "translateX(0px)", opacity: 1 },
-        { transform: `translateX(${outToX})`, opacity: 0 }
+        { opacity: 1 },
+        { opacity: 0 }
       ],
-      { duration: 180, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)", fill: "forwards" }
+      {
+        duration: 160,
+        easing: "ease",
+        fill: "forwards"
+      }
     );
 
-    const animIn = nextWrap.animate(
-      [
-        { transform: `translateX(${inFromX})`, opacity: 0 },
-        { transform: "translateX(0px)", opacity: 1 }
-      ],
-      { duration: 220, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)", fill: "forwards" }
-    );
+    // Remove old after fade completes
+    setTimeout(() => {
+      if (prev.parentNode === vp) {
+        vp.removeChild(prev);
+      }
+    }, 170);
 
-    animIn.onfinish = () => {
-      // remove old
-      if (prev && prev.parentNode === vp) vp.removeChild(prev);
-      // clean inline transforms left by WAAPI
-      nextWrap.style.transform = "";
-      nextWrap.style.opacity = "";
-    };
   } catch (e) {
-    // If WAAPI unavailable, hard swap
-    if (prev && prev.parentNode === vp) vp.removeChild(prev);
+    // Fallback: instant swap
+    if (prev.parentNode === vp) {
+      vp.removeChild(prev);
+    }
   }
 }
 
