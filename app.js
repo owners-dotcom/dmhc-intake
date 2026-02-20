@@ -71,6 +71,34 @@ const State = {
 };
 
 /* ==============================
+   FAIL-LOUD DEBUG OVERLAY
+   (Shows the real error on-screen)
+============================== */
+(function () {
+  function showErr(msg) {
+    const app = document.getElementById("app");
+    if (!app) return;
+    app.innerHTML = `
+      <div style="padding:16px;font-family:system-ui;color:#fff;">
+        <div style="font-size:18px;font-weight:700;margin-bottom:8px;">DMHC Intake crashed</div>
+        <pre style="white-space:pre-wrap;word-break:break-word;background:rgba(0,0,0,.55);padding:12px;border-radius:10px;">
+${String(msg || "Unknown error")}
+        </pre>
+      </div>
+    `;
+  }
+
+  window.addEventListener("error", (e) => {
+    const loc = e?.filename ? `\n\n${e.filename}:${e.lineno}:${e.colno}` : "";
+    showErr((e?.message || e) + loc);
+  });
+
+  window.addEventListener("unhandledrejection", (e) => {
+    showErr(e?.reason?.stack || e?.reason || "Unhandled promise rejection");
+  });
+})();
+
+/* ==============================
    STEPS + LOADING COPY
 ============================== */
 
