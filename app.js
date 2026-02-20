@@ -432,15 +432,15 @@ function Services() {
   const div = document.createElement("div");
 
   div.innerHTML = `
-    <h1>What brings you in?</h1>
+    <h1>What are we doing today?</h1>
     <p class="muted">Choose what feels closest. We’ll refine later.</p>
 
     <div class="card-grid" role="list">
-      ${ServiceCard("Blonding", "Lighter, brighter, dimensional color")}
-      ${ServiceCard("Dimensional Color", "Lived-in depth or refresh")}
-      ${ServiceCard("All-Over / Gray Coverage", "Solid color or root coverage")}
-      ${ServiceCard("Haircut Only", "No color — shape & styling")}
-      ${ServiceCard("Not Sure", "Help me figure it out")}
+      ${IntentCard("Go lighter", "lighter", "Lighter, brighter, dimensional")}
+      ${IntentCard("Refresh dimension / tone", "refresh", "Keep depth, improve tone + shine")}
+      ${IntentCard("Cover grays / roots", "gray", "Root coverage or all-over color")}
+      ${IntentCard("Fix a previous color result", "fix", "Correct banding, brass, uneven tone")}
+      ${IntentCard("Not sure", "unsure", "Help me choose the right service")}
     </div>
 
     <div class="nav">
@@ -451,24 +451,109 @@ function Services() {
   return div;
 }
 
-function ServiceCard(title, description) {
-  const safe = escapeAttr(String(title));
+function IntentCard(title, value, description) {
+  const safe = escapeAttr(String(value));
   return `
-    <button class="card" type="button" role="listitem" onclick="selectService('${safe}')">
+    <button class="card" type="button" role="listitem" onclick="selectIntent('${safe}')">
       <div class="card-title">${escapeHtml(title)}</div>
       <div class="card-desc">${escapeHtml(description)}</div>
     </button>
   `;
 }
 
-function selectService(service) {
-  State.data.service = service;
+function selectIntent(intent) {
+  // clean fields (stylist-facing)
+  State.data.serviceIntent = String(intent);
 
-  // also maintain services[] if you start using it later
+  // backward compatibility (keep old fields alive)
+  const legacyMap = {
+    lighter: "Blonding",
+    refresh: "Dimensional Color",
+    gray: "All-Over / Gray Coverage",
+    fix: "Color Correction",
+    unsure: "Not Sure"
+  };
+  const legacy = legacyMap[String(intent)] || "Not Sure";
+
+  State.data.service = legacy;
   if (!Array.isArray(State.data.services)) State.data.services = [];
-  State.data.services = [String(service)];
+  State.data.services = [legacy];
 
-  next();
+  next(); // -> change
+}
+
+function ChangeSize() {
+  const div = document.createElement("div");
+
+  div.innerHTML = `
+    <h1>How big of a change?</h1>
+    <p class="muted">This helps us time + plan your appointment.</p>
+
+    <div class="card-grid" role="list">
+      ${ChoiceCard("Subtle", "subtle", "Small shift. Keep it natural.")}
+      ${ChoiceCard("Noticeable", "noticeable", "A clear difference, still wearable.")}
+      ${ChoiceCard("Big change", "big", "A transformation.")}
+    </div>
+
+    <div class="nav">
+      <button class="btn ghost" type="button" onclick="back()">Back</button>
+    </div>
+  `;
+
+  return div;
+}
+
+function ChoiceCard(title, value, description) {
+  const safe = escapeAttr(String(value));
+  return `
+    <button class="card" type="button" role="listitem" onclick="selectChangeSize('${safe}')">
+      <div class="card-title">${escapeHtml(title)}</div>
+      <div class="card-desc">${escapeHtml(description)}</div>
+    </button>
+  `;
+}
+
+function selectChangeSize(size) {
+  State.data.changeSize = String(size);
+  next(); // -> extras
+}
+
+function Extras() {
+  const div = document.createElement("div");
+
+  div.innerHTML = `
+    <h1>Anything else today?</h1>
+    <p class="muted">Optional. This just helps us plan.</p>
+
+    <div class="card-grid" role="list">
+      ${ExtrasCard("Shape / trim — Yes", "yes")}
+      ${ExtrasCard("No", "no")}
+      ${ExtrasCard("Not sure", "unsure")}
+    </div>
+
+    <div class="nav">
+      <button class="btn ghost" type="button" onclick="back()">Back</button>
+    </div>
+  `;
+
+  return div;
+}
+
+function ExtrasCard(title, value) {
+  const safe = escapeAttr(String(value));
+  return `
+    <button class="card" type="button" role="listitem" onclick="selectHaircut('${safe}')">
+      <div class="card-title">${escapeHtml(title)}</div>
+    </button>
+  `;
+}
+
+function selectHaircut(v) {
+  if (v === "yes") State.data.wantsHaircut = true;
+  else if (v === "no") State.data.wantsHaircut = false;
+  else State.data.wantsHaircut = null;
+
+  next(); // -> history
 }
 
 function History() {
