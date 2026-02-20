@@ -987,8 +987,7 @@ function swapScreen_(app, node) {
 
   } catch (e) {
     cleanup();
-  }
-}
+  };
 
   hAnim.onfinish = cleanup;
   setTimeout(cleanup, 260);
