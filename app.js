@@ -845,54 +845,95 @@ function swapScreen_(app, node) {
   const vp = app.__dmshell?.viewport;
   if (!vp) return;
 
+  // Clear
   if (!node) {
     vp.innerHTML = "";
     return;
   }
 
+  // One-time viewport setup (prevents visible layout jumps)
+  if (!vp.__dmSwapInit) {
+    vp.__dmSwapInit = true;
+    vp.style.position = "relative";
+    vp.style.overflow = "hidden";
+    vp.style.width = "100%";
+  }
+
+  const prev = vp.firstElementChild;
+
+  // Wrap next screen
   const nextWrap = document.createElement("div");
   nextWrap.className = "screen";
   nextWrap.appendChild(node);
 
-  const prev = vp.firstElementChild;
+  // Put next screen in DOM but hidden, so we can measure it *fully* before showing
+  nextWrap.style.position = "absolute";
+  nextWrap.style.inset = "0";
+  nextWrap.style.width = "100%";
+  nextWrap.style.visibility = "hidden";
+  nextWrap.style.opacity = "0";
 
-  // First render
-  if (!prev) {
-    vp.appendChild(nextWrap);
-    return;
+  // If we have a previous screen, force it to overlay too
+  if (prev) {
+    prev.style.position = "absolute";
+    prev.style.inset = "0";
+    prev.style.width = "100%";
   }
 
-  // 1️⃣ Lock viewport height
-  const prevHeight = vp.offsetHeight;
-  vp.style.height = prevHeight + "px";
-  vp.style.position = "relative";
-  vp.style.overflow = "hidden";
-
-  // 2️⃣ Mount new absolutely
-  nextWrap.style.position = "absolute";
-  nextWrap.style.inset = "0";        // locks all sides
-  nextWrap.style.width = "100%";
-  nextWrap.style.boxSizing = "border-box";
-  nextWrap.style.opacity = "0";
-  nextWrap.style.transform = "translateX(6px)";
-
+  // Mount next (still hidden)
   vp.appendChild(nextWrap);
 
-  try {
-    // Animate new in
-nextWrap.style.opacity = "0";
+  // Force a layout pass so next height is final BEFORE we show it
+  const prevH = prev ? prev.getBoundingClientRect().height : 0;
+  const nextH = nextWrap.getBoundingClientRect().height;
 
-nextWrap.animate(
-  [
-    { opacity: 0 },
-    { opacity: 1 }
-  ],
-  {
-    duration: 180,
-    easing: "ease-out",
-    fill: "forwards"
+  // Lock container height during transition (prevents "middle-out" snap)
+  const startH = Math.max(1, prevH || nextH);
+  vp.style.height = startH + "px";
+
+  // Now reveal next (still transparent) and animate
+  nextWrap.style.visibility = "visible";
+
+  // Height morph (subtle)
+  const hAnim = vp.animate(
+    [{ height: startH + "px" }, { height: nextH + "px" }],
+    { duration: 220, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)", fill: "forwards" }
+  );
+
+  // Crossfade (no translate)
+  nextWrap.animate(
+    [{ opacity: 0 }, { opacity: 1 }],
+    { duration: 220, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)", fill: "forwards" }
+  );
+
+  if (prev) {
+    prev.animate(
+      [{ opacity: 1 }, { opacity: 0 }],
+      { duration: 160, easing: "ease", fill: "forwards" }
+    );
   }
-);
+
+  // Cleanup after transition
+  const cleanup = () => {
+    if (prev && prev.parentNode === vp) vp.removeChild(prev);
+
+    // Make next normal-flow again
+    nextWrap.style.position = "";
+    nextWrap.style.inset = "";
+    nextWrap.style.width = "";
+    nextWrap.style.opacity = "";
+
+    // Release the height lock
+    vp.style.height = "";
+    vp.style.overflow = "";
+  };
+
+  // Run cleanup when height animation finishes (best proxy)
+  hAnim.onfinish = cleanup;
+
+  // Safety cleanup (in case onfinish doesn't fire on some mobile browsers)
+  setTimeout(cleanup, 260);
+}
 
     // Fade old out
     prev.animate(
