@@ -856,21 +856,30 @@ function swapScreen_(app, node) {
 
   const prev = vp.firstElementChild;
 
-  // First render — no animation
+  // First render
   if (!prev) {
     vp.appendChild(nextWrap);
     return;
   }
 
-  // Mount new above old
-  vp.appendChild(nextWrap);
+  // 1️⃣ Lock viewport height
+  const prevHeight = vp.offsetHeight;
+  vp.style.height = prevHeight + "px";
+  vp.style.position = "relative";
+  vp.style.overflow = "hidden";
 
-  // Start with new invisible but present
+  // 2️⃣ Mount new absolutely
+  nextWrap.style.position = "absolute";
+  nextWrap.style.top = "0";
+  nextWrap.style.left = "0";
+  nextWrap.style.width = "100%";
   nextWrap.style.opacity = "0";
   nextWrap.style.transform = "translateX(8px)";
 
+  vp.appendChild(nextWrap);
+
   try {
-    // Animate new IN
+    // Animate new in
     nextWrap.animate(
       [
         { opacity: 0, transform: "translateX(8px)" },
@@ -883,12 +892,9 @@ function swapScreen_(app, node) {
       }
     );
 
-  // Fade old OUT
+    // Fade old out
     prev.animate(
-      [
-        { opacity: 1 },
-        { opacity: 0 }
-      ],
+      [{ opacity: 1 }, { opacity: 0 }],
       {
         duration: 160,
         easing: "ease",
@@ -896,18 +902,19 @@ function swapScreen_(app, node) {
       }
     );
 
-    // Remove old after fade completes
     setTimeout(() => {
-      if (prev.parentNode === vp) {
-        vp.removeChild(prev);
-      }
-    }, 170);
+      if (prev.parentNode === vp) vp.removeChild(prev);
+
+      // 3️⃣ Release height lock AFTER new settles
+      nextWrap.style.position = "";
+      vp.style.height = "";
+      vp.style.overflow = "";
+    }, 220);
 
   } catch (e) {
-    // Fallback: instant swap
-    if (prev.parentNode === vp) {
-      vp.removeChild(prev);
-    }
+    if (prev.parentNode === vp) vp.removeChild(prev);
+    vp.style.height = "";
+    vp.style.overflow = "";
   }
 }
 
