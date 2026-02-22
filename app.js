@@ -1130,7 +1130,7 @@ const DMHCAdapter = (() => {
 })();
 
 /* ==============================
-   SUBMISSION (CANONICAL)
+   SUBMISSION (CANONICAL + RISK + META)
 ============================== */
 
 async function submitForm() {
@@ -1142,8 +1142,9 @@ async function submitForm() {
   if (!isEmailish(email)) return setReviewError_("That email looks a little off — please double-check it.");
   if (!phone) return setReviewError_("Please add a phone number so we can reach you.");
 
-  // Must have at least 1 CURRENT photo (inspo optional)
-  const currentCount = normalizeToFileList_(State.data.currentPhotos || []).slice(0, MAX_CURRENT_PHOTOS).length;
+  const currentCount = normalizeToFileList_(State.data.currentPhotos || [])
+    .slice(0, MAX_CURRENT_PHOTOS).length;
+
   if (currentCount < MIN_CURRENT_PHOTOS) {
     return setReviewError_("Please add at least one photo of your current hair.");
   }
@@ -1158,7 +1159,8 @@ async function submitForm() {
   goToStep(Steps.indexOf("loading"));
 
   try {
-    const picked = normalizeToFileList_(getSelectedFiles_()).slice(0, MAX_TOTAL_PHOTOS);
+    const picked = normalizeToFileList_(getSelectedFiles_())
+      .slice(0, MAX_TOTAL_PHOTOS);
 
     const photos = [];
     for (let i = 0; i < picked.length; i++) {
@@ -1172,13 +1174,33 @@ async function submitForm() {
       });
     }
 
+    // -------------------------
+    // Build payload (LOCKED CONTRACT SAFE)
+    // -------------------------
+
     const payload = DMHCAdapter.buildPayload({
       ...State.data,
       fullName,
       email,
       phone
     });
+
     payload.photos = photos;
+
+    // -------------------------
+    // Risk Inference (non-breaking)
+    // -------------------------
+
+    const riskScore = computeRiskScore_();
+    const riskTier = getRiskTier_(riskScore);
+
+    payload.riskScore = riskScore;      // optional field (safe)
+    payload.riskTier = riskTier;        // optional field (safe)
+    payload.schemaVersion = SCHEMA_VERSION;
+    payload.submittedFrom = "web-intake";
+    payload.userAgent = navigator.userAgent || "unknown";
+
+    // -------------------------
 
     setLoadingLine_("Sending securely…");
 
@@ -1214,6 +1236,7 @@ async function submitForm() {
       : "We didn’t get a clean confirmation. Tap Try Again once.";
 
     showLoadingRetry_(msg);
+
   } catch (err) {
     State.ui.submitting = false;
 
@@ -1418,4 +1441,44 @@ function escapeHtml(str) {
 
 function escapeAttr(str) {
   return escapeHtml(str).replace(/`/g, "&#096;");
+}
+
+/* ==============================
+   RISK + META HELPERS
+============================== */
+
+const SCHEMA_VERSION = "1.2.0";
+
+function computeRiskScore_() {
+  let score = 0;
+
+  const intent = State.data.serviceIntent;
+  const size = State.data.changeSize;
+  const lastColor = (State.data.lastColor || "").toLowerCase();
+  const photoCount = countPickedPhotos_();
+  const services = Array.isArray(State.data.services) ? State.data.services : [];
+
+  // Correction intent
+  if (intent === "fix") score += 4;
+
+  // Large transformation
+  if (size === "big") score += 3;
+
+  // Very recent color
+  if (lastColor.includes("week")) score += 2;
+  if (lastColor.includes("month") && lastColor.includes("1")) score += 1;
+
+  // No photos
+  if (photoCount === 0) score += 2;
+
+  // Blonding + big change combo
+  if (services.includes("Blonding") && size === "big") score += 2;
+
+  return score;
+}
+
+function getRiskTier_(score) {
+  if (score >= 7) return "High";
+  if (score >= 4) return "Moderate";
+  return "Low";
 }
