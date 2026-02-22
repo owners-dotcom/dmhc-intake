@@ -1130,17 +1130,61 @@ const DMHCAdapter = (() => {
 })();
 
 /* ==============================
+   RISK + META HELPERS (NON-BREAKING)
+============================== */
+
+const SCHEMA_VERSION = "1.2.0";
+
+function computeRiskScore_() {
+  let score = 0;
+
+  const intent = String(State.data.serviceIntent || "");
+  const size = String(State.data.changeSize || "");
+  const lastColorTxt = String(State.data.lastColor || State.data.lastColorDate || "").toLowerCase();
+  const photoCount = countPickedPhotos_();
+  const services = Array.isArray(State.data.services) ? State.data.services.map(s => String(s || "")) : [];
+
+  // High-risk intent
+  if (intent === "fix") score += 4;
+
+  // Transformation size
+  if (size === "big") score += 3;
+  if (size === "noticeable") score += 1;
+
+  // Very recent chemical/color work (best-effort parse)
+  if (lastColorTxt.includes("week")) score += 2;
+  if (lastColorTxt.includes("2 week") || lastColorTxt.includes("two week")) score += 2;
+  if (lastColorTxt.includes("1 month") || lastColorTxt.includes("one month")) score += 1;
+
+  // Missing photos (planning blind)
+  if (photoCount <= 0) score += 2;
+
+  // Blonding + big change combo
+  if (services.includes("Blonding") && size === "big") score += 2;
+
+  // Clamp 0–10 (keeps reporting consistent)
+  return clamp(score, 0, 10);
+}
+
+function getRiskTier_(score) {
+  const s = Number(score) || 0;
+  if (s >= 7) return "High";
+  if (s >= 4) return "Moderate";
+  return "Low";
+}
+
+/* ==============================
    SUBMISSION (CANONICAL + RISK + META)
 ============================== */
 
-async function submitForm() {
+async function submitForm(opts = {}) {
   const fullName = (State.data.fullName || State.data.name || "").trim();
   const email = (State.data.email || "").trim();
   const phone = (State.data.phone || "").trim();
 
   if (!fullName) return setReviewError_("Please add your name, then submit again.");
   if (!isEmailish(email)) return setReviewError_("That email looks a little off — please double-check it.");
-  if (!phone) return setReviewError_("Please add a phone number so we can reach you.");
+  if (!phone || phone.length < 7) return setReviewError_("Please add a phone number so we can reach you.");
 
   const currentCount = normalizeToFileList_(State.data.currentPhotos || [])
     .slice(0, MAX_CURRENT_PHOTOS).length;
@@ -1159,14 +1203,14 @@ async function submitForm() {
   goToStep(Steps.indexOf("loading"));
 
   try {
-    const picked = normalizeToFileList_(getSelectedFiles_())
-      .slice(0, MAX_TOTAL_PHOTOS);
+    const picked = normalizeToFileList_(getSelectedFiles_()).slice(0, MAX_TOTAL_PHOTOS);
 
     const photos = [];
     for (let i = 0; i < picked.length; i++) {
       setLoadingLine_(`Optimizing photo ${i + 1} of ${picked.length}…`);
       const f = picked[i];
       const base64 = await compressToJpegBase64_(f, MAX_EDGE_PX, JPEG_QUALITY);
+
       photos.push({
         originalName: f.name || "upload.jpg",
         mime: "image/jpeg",
@@ -1177,7 +1221,6 @@ async function submitForm() {
     // -------------------------
     // Build payload (LOCKED CONTRACT SAFE)
     // -------------------------
-
     const payload = DMHCAdapter.buildPayload({
       ...State.data,
       fullName,
@@ -1188,17 +1231,16 @@ async function submitForm() {
     payload.photos = photos;
 
     // -------------------------
-    // Risk Inference (non-breaking)
+    // Risk Inference (non-breaking additions)
     // -------------------------
-
     const riskScore = computeRiskScore_();
     const riskTier = getRiskTier_(riskScore);
 
-    payload.riskScore = riskScore;      // optional field (safe)
-    payload.riskTier = riskTier;        // optional field (safe)
-    payload.schemaVersion = SCHEMA_VERSION;
-    payload.submittedFrom = "web-intake";
-    payload.userAgent = navigator.userAgent || "unknown";
+    payload.riskScore = riskScore;                 // OPTIONAL (safe)
+    payload.riskTier = riskTier;                   // OPTIONAL (safe)
+    payload.schemaVersion = SCHEMA_VERSION;        // OPTIONAL (safe)
+    payload.submittedFrom = String(window.location.href || "web-intake");
+    payload.userAgent = String(navigator.userAgent || "unknown");
 
     // -------------------------
 
@@ -1264,7 +1306,6 @@ function countPickedPhotos_() {
   return normalizeToFileList_(getSelectedFiles_()).length;
 }
 
-// supports File OR {file: File} OR junk
 function normalizeOneFile_(x) {
   if (!x) return null;
   if (x instanceof File) return x;
@@ -1304,27 +1345,19 @@ async function renderThumbs(files, targetEl) {
 ============================== */
 
 async function compressToJpegBase64_(file, maxEdgePx, quality) {
-  if (!(file instanceof File)) {
-    throw new Error("compressToJpegBase64_: expected File");
-  }
+  if (!(file instanceof File)) throw new Error("compressToJpegBase64_: expected File");
 
-  const blob = file;
-
-  // Prefer createImageBitmap when available (faster, memory-friendly)
   let bitmap = null;
   try {
-    if ("createImageBitmap" in window) {
-      bitmap = await createImageBitmap(blob);
-    }
+    if ("createImageBitmap" in window) bitmap = await createImageBitmap(file);
   } catch (e) {
     bitmap = null;
   }
 
-  const img = bitmap ? null : await fileToImage_(blob);
+  const img = bitmap ? null : await fileToImage_(file);
 
-  const srcW = bitmap ? bitmap.width : img.naturalWidth || img.width;
-  const srcH = bitmap ? bitmap.height : img.naturalHeight || img.height;
-
+  const srcW = bitmap ? bitmap.width : (img.naturalWidth || img.width);
+  const srcH = bitmap ? bitmap.height : (img.naturalHeight || img.height);
   if (!srcW || !srcH) throw new Error("Could not read image dimensions.");
 
   const scale = Math.min(1, maxEdgePx / Math.max(srcW, srcH));
@@ -1357,14 +1390,8 @@ function fileToImage_(blob) {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(blob);
     const img = new Image();
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      resolve(img);
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("Image decode failed."));
-    };
+    img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Image decode failed.")); };
     img.src = url;
   });
 }
@@ -1393,7 +1420,6 @@ function showLoadingRetry_(msg) {
   if (text) text.textContent = State.ui.loadingRetryMsg;
   if (wrap) wrap.classList.remove("hidden");
 
-  // keep the main line calm and stable
   setLoadingLine_("Almost there…");
 }
 
@@ -1441,44 +1467,4 @@ function escapeHtml(str) {
 
 function escapeAttr(str) {
   return escapeHtml(str).replace(/`/g, "&#096;");
-}
-
-/* ==============================
-   RISK + META HELPERS
-============================== */
-
-const SCHEMA_VERSION = "1.2.0";
-
-function computeRiskScore_() {
-  let score = 0;
-
-  const intent = State.data.serviceIntent;
-  const size = State.data.changeSize;
-  const lastColor = (State.data.lastColor || "").toLowerCase();
-  const photoCount = countPickedPhotos_();
-  const services = Array.isArray(State.data.services) ? State.data.services : [];
-
-  // Correction intent
-  if (intent === "fix") score += 4;
-
-  // Large transformation
-  if (size === "big") score += 3;
-
-  // Very recent color
-  if (lastColor.includes("week")) score += 2;
-  if (lastColor.includes("month") && lastColor.includes("1")) score += 1;
-
-  // No photos
-  if (photoCount === 0) score += 2;
-
-  // Blonding + big change combo
-  if (services.includes("Blonding") && size === "big") score += 2;
-
-  return score;
-}
-
-function getRiskTier_(score) {
-  if (score >= 7) return "High";
-  if (score >= 4) return "Moderate";
-  return "Low";
 }
