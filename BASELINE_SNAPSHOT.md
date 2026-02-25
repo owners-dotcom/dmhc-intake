@@ -1525,4 +1525,473 @@ function swapScreen_(app, node) {
     nextWrap.style.opacity = "";
   };
 
+  try {
+    const inAnim = nextWrap.animate(
+      [{ opacity: 0, transform: "translateX(10px)" }, { opacity: 1, transform: "translateX(0px)" }],
+      { duration: 200, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)", fill: "forwards" }
+    );
+
+    prev.animate(
+      [{ opacity: 1 }, { opacity: 0 }],
+      { duration: 160, easing: "ease", fill: "forwards" }
+    );
+
+    inAnim.onfinish = cleanup;
+    setTimeout(cleanup, 260);
+
+  } catch (e) {
+    cleanup();
+  }
+
+}
+
+/* ==============================
+   ADAPTER + CANON SUBMISSION
+============================== */
+
+const DMHCAdapter = (() => {
+  const CANON_KEYS = [
+    "company",
+    "fullName",
+    "phone",
+    "email",
+    "preferredStylist",
+    "services",
+    "goals",
+    "lastColorDate",
+    "boxDye",
+    "chemicalServices",
+    "sensitivities",
+    "hairLength",
+    "maintenanceFrequency",
+    "referralSource",
+    "submittedFrom",
+    "userAgent",
+    "photos"
+  ];
+
+  function buildPayload(d) {
+    // 1) Required identity fields (with fallback to avoid false missing-name errors)
+    const fullName = pickString(d, ["fullName", "name"]) || "";
+    const phone = pickString(d, ["phone"]) || "";
+    const email = pickString(d, ["email"]) || "";
+
+    // 2) Optional fields (stable keys)
+    const company = pickString(d, ["company"]) || ""; // honeypot
+    const preferredStylist = pickString(d, ["preferredStylist", "preferred_stylist"]) || "";
+
+    // 3) services MUST be array (support array or string)
+    const services = normalizeServices_(d);
+
+    const goals = pickString(d, ["goals", "goal"]) || "";
+    const lastColorDate =
+      pickString(d, ["lastColorDate"]) ||
+      pickString(d, ["lastColor"]) ||
+      "";
+    const boxDye = pickString(d, ["boxDye", "box_dye"]) || "";
+    const chemicalServices = pickString(d, ["chemicalServices", "chemical_services"]) || "";
+    const sensitivities = pickString(d, ["sensitivities"]) || "";
+
+    // New optional keys (safe; backend will auto-add columns)
+    const hairLength = pickString(d, ["hairLength", "hair_length"]) || "";
+    const maintenanceFrequency = pickString(d, ["maintenanceFrequency", "maintenance_frequency", "visitFrequency"]) || "";
+    const referralSource = pickString(d, ["referralSource", "referral_source", "referral", "howDidYouHear"]) || "";
+
+    const submittedFrom = String(window.location.href || "");
+    const userAgent = String(navigator.userAgent || "");
+
+    // Photos are built separately and assigned by submitForm() after compression
+    const payload = {
+      company,
+      fullName,
+      phone,
+      email,
+      preferredStylist,
+      services,
+      goals,
+      lastColorDate,
+      boxDye,
+      chemicalServices,
+      sensitivities,
+      hairLength,
+      maintenanceFrequency,
+      referralSource,
+      submittedFrom,
+      userAgent,
+      photos: []
+    };
+
+    // Ensure only canon keys exist (contract hygiene)
+    const clean = {};
+    for (const k of CANON_KEYS) clean[k] = payload[k];
+    return clean;
+  }
+
+  function normalizeServices_(d) {
+    const raw = d && typeof d === "object" ? d.services : null;
+    if (Array.isArray(raw)) {
+      return raw.map(x => String(x || "").trim()).filter(Boolean);
+    }
+    if (typeof raw === "string" && raw.trim()) {
+      return [raw.trim()];
+    }
+    const single = pickString(d, ["service"]) || "";
+    return single ? [String(single).trim()] : [];
+  }
+
+  function pickString(obj, keys) {
+    if (!obj || typeof obj !== "object") return "";
+    for (const k of keys) {
+      if (Object.prototype.hasOwnProperty.call(obj, k)) {
+        const v = obj[k];
+        if (typeof v === "string") return v.trim();
+        if (v == null) continue;
+        return String(v).trim();
+      }
+    }
+    return "";
+  }
+
+  return { buildPayload };
+})();
+
+/* ==============================
+   RISK + META HELPERS (NON-BREAKING)
+============================== */
+
+const SCHEMA_VERSION = "1.2.0";
+
+function computeRiskScore_() {
+  let score = 0;
+
+  const intent = String(State.data.serviceIntent || "");
+  const size = String(State.data.changeSize || "");
+  const lastColorTxt = String(State.data.lastColor || State.data.lastColorDate || "").toLowerCase();
+  const photoCount = countPickedPhotos_();
+  const services = Array.isArray(State.data.services) ? State.data.services.map(s => String(s || "")) : [];
+
+  // High-risk intent
+  if (intent === "fix") score += 4;
+
+  // Transformation size
+  if (size === "big") score += 3;
+  if (size === "noticeable") score += 1;
+
+  // Very recent chemical/color work (best-effort parse)
+  if (lastColorTxt.includes("week")) score += 2;
+  if (lastColorTxt.includes("2 week") || lastColorTxt.includes("two week")) score += 2;
+  if (lastColorTxt.includes("1 month") || lastColorTxt.includes("one month")) score += 1;
+
+  // Missing photos (planning blind)
+  if (photoCount <= 0) score += 2;
+
+  // Blonding + big change combo
+  if (services.includes("Blonding") && size === "big") score += 2;
+
+  // Clamp 0–10 (keeps reporting consistent)
+  return clamp(score, 0, 10);
+}
+
+function getRiskTier_(score) {
+  const s = Number(score) || 0;
+  if (s >= 7) return "High";
+  if (s >= 4) return "Moderate";
+  return "Low";
+}
+
+/* ==============================
+   SUBMISSION (CANONICAL + RISK + META)
+============================== */
+
+async function submitForm(opts = {}) {
+  const fullName = (State.data.fullName || State.data.name || "").trim();
+  const email = (State.data.email || "").trim();
+  const phone = (State.data.phone || "").trim();
+
+  if (!fullName) return setReviewError_("Please add your name, then submit again.");
+  if (!isEmailish(email)) return setReviewError_("That email looks a little off — please double-check it.");
+  if (!phone || phone.length < 7) return setReviewError_("Please add a phone number so we can reach you.");
+
+  const currentCount = normalizeToFileList_(State.data.currentPhotos || [])
+    .slice(0, MAX_CURRENT_PHOTOS).length;
+
+  if (currentCount < MIN_CURRENT_PHOTOS) {
+    return setReviewError_("Please add at least one photo of your current hair.");
+  }
+
+  if (State.ui.submitting) return;
+  State.ui.submitting = true;
+
+  State.ui.loadingMode = "submit";
+  State.ui.showLoadingRetry = false;
+  State.ui.loadingRetryMsg = "";
+
+  goToStep(Steps.indexOf("loading"));
+
+  try {
+    const picked = normalizeToFileList_(getSelectedFiles_()).slice(0, MAX_TOTAL_PHOTOS);
+
+    const photos = [];
+    for (let i = 0; i < picked.length; i++) {
+      setLoadingLine_(`Optimizing photo ${i + 1} of ${picked.length}…`);
+      const f = picked[i];
+      const base64 = await compressToJpegBase64_(f, MAX_EDGE_PX, JPEG_QUALITY);
+
+      photos.push({
+        originalName: f.name || "upload.jpg",
+        mime: "image/jpeg",
+        base64
+      });
+    }
+
+    // -------------------------
+    // Build payload (LOCKED CONTRACT SAFE)
+    // -------------------------
+    const payload = DMHCAdapter.buildPayload({
+      ...State.data,
+      fullName,
+      email,
+      phone
+    });
+
+    payload.photos = photos;
+
+    // -------------------------
+    // Risk Inference (non-breaking additions)
+    // -------------------------
+    const riskScore = computeRiskScore_();
+    const riskTier = getRiskTier_(riskScore);
+
+    payload.riskScore = riskScore;                 // OPTIONAL (safe)
+    payload.riskTier = riskTier;                   // OPTIONAL (safe)
+    payload.schemaVersion = SCHEMA_VERSION;        // OPTIONAL (safe)
+    payload.submittedFrom = String(window.location.href || "web-intake");
+    payload.userAgent = String(navigator.userAgent || "unknown");
+
+    // -------------------------
+
+    setLoadingLine_("Sending securely…");
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 45000);
+
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    let out = null;
+    try {
+      out = await res.json();
+    } catch (e) {
+      out = { ok: res.ok };
+    }
+
+    State.ui.submitting = false;
+
+    if (out && out.ok) {
+      State.ui.loadingMode = "quotes";
+      goToStep(Steps.indexOf("thankyou"));
+      return;
+    }
+
+    const msg = out && out.message
+      ? String(out.message)
+      : "We didn’t get a clean confirmation. Tap Try Again once.";
+
+    showLoadingRetry_(msg);
+
+  } catch (err) {
+    State.ui.submitting = false;
+
+    if (err && err.name === "AbortError") {
+      showLoadingRetry_("Still working on it — mobile uploads can be slow. Tap Try Again once.");
+      return;
+    }
+
+    goToStep(Steps.indexOf("review"));
+    setReviewError_("Something hiccuped on our side. Please tap Submit again.");
+  }
+}
+
+/* ==============================
+   PHOTO HELPERS
+============================== */
+
+function getSelectedFiles_() {
+  const current = normalizeToFileList_(State.data.currentPhotos || []).slice(0, MAX_CURRENT_PHOTOS);
+  const inspo = State.data.inspoPhoto ? [normalizeOneFile_(State.data.inspoPhoto)] : [];
+  return [...current, ...inspo].filter(Boolean).slice(0, MAX_TOTAL_PHOTOS);
+}
+
+function countPickedPhotos_() {
+  return normalizeToFileList_(getSelectedFiles_()).length;
+}
+
+function normalizeOneFile_(x) {
+  if (!x) return null;
+  if (x instanceof File) return x;
+  if (typeof x === "object" && x.file instanceof File) return x.file;
+  return null;
+}
+
+function normalizeToFileList_(arr) {
+  const out = [];
+  for (const x of Array.isArray(arr) ? arr : []) {
+    const f = normalizeOneFile_(x);
+    if (f) out.push(f);
+  }
+  return out;
+}
+
+async function renderThumbs(files, targetEl) {
+  if (!targetEl) return;
+  targetEl.innerHTML = "";
+
+  const list = normalizeToFileList_(files).slice(0, 6);
+  if (!list.length) return;
+
+  for (const f of list) {
+    const url = URL.createObjectURL(f);
+    const img = document.createElement("img");
+    img.className = "thumb";
+    img.src = url;
+    img.alt = "Photo preview";
+    img.onload = () => URL.revokeObjectURL(url);
+    targetEl.appendChild(img);
+  }
+}
+
+/* ==============================
+   JPEG COMPRESSION → BASE64 (NO PREFIX)
+============================== */
+
+async function compressToJpegBase64_(file, maxEdgePx, quality) {
+  if (!(file instanceof File)) throw new Error("compressToJpegBase64_: expected File");
+
+  let bitmap = null;
+  try {
+    if ("createImageBitmap" in window) bitmap = await createImageBitmap(file);
+  } catch (e) {
+    bitmap = null;
+  }
+
+  const img = bitmap ? null : await fileToImage_(file);
+
+  const srcW = bitmap ? bitmap.width : (img.naturalWidth || img.width);
+  const srcH = bitmap ? bitmap.height : (img.naturalHeight || img.height);
+  if (!srcW || !srcH) throw new Error("Could not read image dimensions.");
+
+  const scale = Math.min(1, maxEdgePx / Math.max(srcW, srcH));
+  const dstW = Math.max(1, Math.round(srcW * scale));
+  const dstH = Math.max(1, Math.round(srcH * scale));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = dstW;
+  canvas.height = dstH;
+
+  const ctx = canvas.getContext("2d", { alpha: false });
+  if (!ctx) throw new Error("Canvas unsupported.");
+
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+
+  if (bitmap) {
+    ctx.drawImage(bitmap, 0, 0, dstW, dstH);
+    try { bitmap.close && bitmap.close(); } catch (e) {}
+  } else {
+    ctx.drawImage(img, 0, 0, dstW, dstH);
+  }
+
+  const dataUrl = canvas.toDataURL("image/jpeg", clampNumber_(quality, 0.5, 0.92));
+  const commaIdx = dataUrl.indexOf(",");
+  return commaIdx >= 0 ? dataUrl.slice(commaIdx + 1) : dataUrl;
+}
+
+function fileToImage_(blob) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Image decode failed.")); };
+    img.src = url;
+  });
+}
+
+/* ==============================
+   HELPERS
+============================== */
+
+function setCheck(el, ok) {
+  if (!el) return;
+  el.classList.toggle("on", !!ok);
+}
+
+function setLoadingLine_(msg) {
+  const el = document.getElementById("loadingLine");
+  if (el) el.textContent = String(msg || "");
+}
+
+function showLoadingRetry_(msg) {
+  State.ui.showLoadingRetry = true;
+  State.ui.loadingRetryMsg = String(msg || "");
+
+  const wrap = document.getElementById("loadingRetryWrap");
+  const text = document.getElementById("loadingRetryMsg");
+
+  if (text) text.textContent = State.ui.loadingRetryMsg;
+  if (wrap) wrap.classList.remove("hidden");
+
+  setLoadingLine_("Almost there…");
+}
+
+function isEmailish(email) {
+  if (!email) return false;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function clamp(n, min, max) {
+  return Math.max(min, Math.min(max, n));
+}
+
+function clampNumber_(n, min, max) {
+  const x = Number(n);
+  if (Number.isNaN(x)) return min;
+  return Math.max(min, Math.min(max, x));
+}
+
+function mergeFilesDedupCap_(a, b, cap) {
+  const out = [];
+  const seen = new Set();
+
+  const push = (f) => {
+    if (!(f instanceof File)) return;
+    const key = `${f.name}::${f.size}::${f.lastModified}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push(f);
+  };
+
+  for (const f of (Array.isArray(a) ? a : [])) push(f);
+  for (const f of (Array.isArray(b) ? b : [])) push(f);
+
+  return out.slice(0, Math.max(0, Number(cap) || 0));
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function escapeAttr(str) {
+  return escapeHtml(str).replace(/`/g, "&#096;");
+}
 
