@@ -7,7 +7,7 @@ Last updated: 2026-02-25
 - GitHub Pages: https://owners-dotcom.github.io/dmhc-intake/
 - Squarespace entry page: https://dmhairco.com/new-guest-form
 - Apps Script Web App (/exec): https://script.google.com/macros/s/AKfycbwQ9jmUDlTS46nRr0aNtC6wFIoSzl-6QnLg-rjwo06nnom_NEcaiTthBQ3zQ9GJ5sAI/exec
-- Google Sheet: https://docs.google.com/spreadsheets/d/PASTE_SHEET_ID/edit
+- Google Sheet: https://docs.google.com/spreadsheets/d/1HRHBPLig1hKm2pxsT4gdK4gcLMy0ysYZPDUbfy3LxGM/edit
 
 ## Apps Script Deployment Label
 - Deployment/version label: PASTE_LABEL_HERE
