@@ -11,7 +11,7 @@ Client-forward luxury intake that maximizes completion rate and produces a styli
 
 ## Locked Contracts
 ### Backend Contract (Locked)
-Endpoint: POST https://script.google.com/macros/s/XXXXX/exec  
+Endpoint: POST https://script.google.com/macros/s/1HRHBPLig1hKm2pxsT4gdK4gcLMy0ysYZPDUbfy3LxGM/exec  
 Required: fullName, phone, email, services[], photos[{base64,...}]  
 Optional: preferredStylist, goals/goal, lastColorDate, boxDye, chemicalServices, hairHistory, sensitivities, submittedFrom, userAgent, schemaVersion, formType  
 Photos: max 8; base64 length > 50; payload ~8MB  
