@@ -1024,5 +1024,505 @@ function IntentCard(title, value, description) {
       <div class="card-title">${escapeHtml(title)}</div>
       <div class="card-desc">${escapeHtml(description)}</div>
     </button>
+  `;
+}
+
+function selectIntent(intent) {
+  // clean fields (stylist-facing)
+  State.data.serviceIntent = String(intent);
+
+  // backward compatibility (keep old fields alive)
+  const legacyMap = {
+    lighter: "Blonding",
+    refresh: "Dimensional Color",
+    gray: "All-Over / Gray Coverage",
+    fix: "Color Correction",
+    unsure: "Not Sure"
+  };
+  const legacy = legacyMap[String(intent)] || "Not Sure";
+
+  State.data.service = legacy;
+  if (!Array.isArray(State.data.services)) State.data.services = [];
+  State.data.services = [legacy];
+
+  next(); // -> change
+}
+
+function selectService(service) {
+  const map = {
+    "Blonding": "lighter",
+    "Dimensional Color": "refresh",
+    "All-Over / Gray Coverage": "gray",
+    "Color Correction": "fix",
+    "Not Sure": "unsure"
+  };
+  selectIntent(map[String(service)] || "unsure");
+}
+
+function ChangeSize() {
+  const div = document.createElement("div");
+
+  div.innerHTML = `
+    <h1>How big of a change?</h1>
+    <p class="muted">This helps us time + plan your appointment.</p>
+
+    <div class="card-grid" role="list">
+      ${ChoiceCard("Subtle", "subtle", "Small shift. Keep it natural.")}
+      ${ChoiceCard("Noticeable", "noticeable", "A clear difference, still wearable.")}
+      ${ChoiceCard("Big change", "big", "A transformation.")}
+    </div>
+
+    <div class="nav">
+      <button class="btn ghost" type="button" onclick="back()">Back</button>
+    </div>
+  `;
+
+  return div;
+}
+
+function ChoiceCard(title, value, description) {
+  const safe = escapeAttr(String(value));
+  return `
+    <button class="card" type="button" role="listitem" onclick="selectChangeSize('${safe}')">
+      <div class="card-title">${escapeHtml(title)}</div>
+      <div class="card-desc">${escapeHtml(description)}</div>
+    </button>
+  `;
+}
+
+function selectChangeSize(size) {
+  State.data.changeSize = String(size);
+  next(); // -> extras
+}
+
+function Extras() {
+  const div = document.createElement("div");
+
+  div.innerHTML = `
+    <h1>Anything else today?</h1>
+    <p class="muted">Optional. This just helps us plan.</p>
+
+    <div class="card-grid" role="list">
+      ${ExtrasCard("Shape / trim — Yes", "yes")}
+      ${ExtrasCard("No", "no")}
+      ${ExtrasCard("Not sure", "unsure")}
+    </div>
+
+    <div class="nav">
+      <button class="btn ghost" type="button" onclick="back()">Back</button>
+    </div>
+  `;
+
+  return div;
+}
+
+function ExtrasCard(title, value) {
+  const safe = escapeAttr(String(value));
+  return `
+    <button class="card" type="button" role="listitem" onclick="selectHaircut('${safe}')">
+      <div class="card-title">${escapeHtml(title)}</div>
+    </button>
+  `;
+}
+
+function selectHaircut(v) {
+  if (v === "yes") State.data.wantsHaircut = true;
+  else if (v === "no") State.data.wantsHaircut = false;
+  else State.data.wantsHaircut = null;
+
+  next(); // -> history
+}
+
+function History() {
+  const div = document.createElement("div");
+
+  div.innerHTML = `
+    <h1>Hair history</h1>
+    <p class="muted">Just a quick note so we can plan your service.</p>
+
+    <div class="field">
+      <label class="label">Last professional color (approx.)</label>
+      <input id="inLastColor" class="input" placeholder="Example: 3 months ago" />
+    </div>
+
+    <div class="nav">
+      <button class="btn ghost" type="button" onclick="back()">Back</button>
+      <button class="btn primary" type="button" id="btnHistoryContinue">Continue</button>
+    </div>
+  `;
+
+  // bind without re-render while typing
+  setTimeout(() => {
+    const inLast = document.getElementById("inLastColor");
+    const btn = document.getElementById("btnHistoryContinue");
+    if (inLast) inLast.value = State.data.lastColor || State.data.lastColorDate || "";
+    if (btn) {
+      btn.addEventListener("click", () => {
+        const v = inLast ? (inLast.value || "").trim() : "";
+        State.data.lastColor = v;
+        State.data.lastColorDate = v; // keep both keys compatible
+        next();
+      });
+    }
+  }, 0);
+
+  return div;
+}
+
+function Photos() {
+  const div = document.createElement("div");
+
+  const currentCount = normalizeToFileList_(State.data.currentPhotos || []).slice(0, MAX_CURRENT_PHOTOS).length;
+  const inspoCount = State.data.inspoPhoto ? 1 : 0;
+
+  div.innerHTML = `
+    <h1>Photos</h1>
+    <p class="muted">Add 1–2 photos of your current hair. Add 1 inspiration photo if you have it. Total max: 3.</p>
+
+    <div class="photo-block">
+      <div class="photo-head">
+        <div class="photo-title">Current hair (1–2) <span class="req">*</span></div>
+        <div class="photo-meta muted" id="metaCurrent">${currentCount ? `${currentCount} selected` : "None selected"}</div>
+      </div>
+
+      <input id="fileCurrent" class="file-hidden" type="file" accept="image/*" multiple />
+      <button class="btn ghost" type="button" id="btnPickCurrent">Choose photos</button>
+
+      <div class="thumbs" id="thumbsCurrent"></div>
+    </div>
+
+    <div class="photo-block" style="margin-top:14px;">
+      <div class="photo-head">
+        <div class="photo-title">Inspiration (optional)</div>
+        <div class="photo-meta muted" id="metaInspo">${inspoCount ? `1 selected` : "None selected"}</div>
+      </div>
+
+      <input id="fileInspo" class="file-hidden" type="file" accept="image/*" />
+      <button class="btn ghost" type="button" id="btnPickInspo">Choose inspiration</button>
+
+      <div class="thumbs" id="thumbsInspo"></div>
+    </div>
+
+    <div class="nav">
+      <button class="btn ghost" type="button" onclick="back()">Back</button>
+      <button class="btn primary" type="button" onclick="next()">Continue</button>
+    </div>
+  `;
+
+  return div;
+}
+
+function bindPhotoInteractions() {
+  const fileCurrent = document.getElementById("fileCurrent");
+  const fileInspo = document.getElementById("fileInspo");
+  const btnPickCurrent = document.getElementById("btnPickCurrent");
+  const btnPickInspo = document.getElementById("btnPickInspo");
+
+  const thumbsCurrent = document.getElementById("thumbsCurrent");
+  const thumbsInspo = document.getElementById("thumbsInspo");
+
+  const metaCurrent = document.getElementById("metaCurrent");
+  const metaInspo = document.getElementById("metaInspo");
+
+  if (!fileCurrent || !fileInspo || !btnPickCurrent || !btnPickInspo) return;
+
+  btnPickCurrent.addEventListener("click", () => fileCurrent.click());
+  btnPickInspo.addEventListener("click", () => fileInspo.click());
+
+  // Current hair: append + dedupe + cap(2)
+  fileCurrent.addEventListener("change", async () => {
+    const newlyPicked = normalizeToFileList_(Array.from(fileCurrent.files || []));
+    const existing = normalizeToFileList_(State.data.currentPhotos || []);
+
+    State.data.currentPhotos = mergeFilesDedupCap_(existing, newlyPicked, MAX_CURRENT_PHOTOS);
+
+    // allow re-picking the same file to trigger change again
+    fileCurrent.value = "";
+
+    if (metaCurrent) {
+      metaCurrent.textContent = State.data.currentPhotos.length
+        ? `${State.data.currentPhotos.length} selected`
+        : "None selected";
+    }
+
+    await renderThumbs(State.data.currentPhotos, thumbsCurrent);
+  });
+
+  // Inspiration: single file, replace (optional)
+  fileInspo.addEventListener("change", async () => {
+    const f = (fileInspo.files && fileInspo.files[0]) ? fileInspo.files[0] : null;
+    State.data.inspoPhoto = normalizeOneFile_(f);
+
+    // allow re-picking the same file to trigger change again
+    fileInspo.value = "";
+
+    if (metaInspo) metaInspo.textContent = State.data.inspoPhoto ? "1 selected" : "None selected";
+    await renderThumbs(State.data.inspoPhoto ? [State.data.inspoPhoto] : [], thumbsInspo);
+  });
+
+  // initial thumbs (no re-render)
+  if (metaCurrent) {
+    const n = normalizeToFileList_(State.data.currentPhotos || []).slice(0, MAX_CURRENT_PHOTOS).length;
+    metaCurrent.textContent = n ? `${n} selected` : "None selected";
+  }
+  if (metaInspo) metaInspo.textContent = State.data.inspoPhoto ? "1 selected" : "None selected";
+
+  renderThumbs(normalizeToFileList_(State.data.currentPhotos || []).slice(0, MAX_CURRENT_PHOTOS), thumbsCurrent);
+  renderThumbs(State.data.inspoPhoto ? [normalizeOneFile_(State.data.inspoPhoto)] : [], thumbsInspo);
+}
+
+function Review() {
+  const div = document.createElement("div");
+
+  div.innerHTML = `
+    <h1>Review your details</h1>
+    <p class="muted">Quick check — you can go back and edit anything.</p>
+
+    <div class="review-card">
+      <div class="review-section">
+        <div class="review-title">Contact</div>
+        ${reviewRow("Name", (State.data.fullName || State.data.name || "—"))}
+        ${reviewRow("Email", State.data.email || "—")}
+        ${reviewRow("Phone", State.data.phone || "—")}
+      </div>
+
+      <div class="review-divider"></div>
+
+      <div class="review-section">
+        <div class="review-title">Service</div>
+        <div class="pill">${escapeHtml(State.data.service || (Array.isArray(State.data.services) ? (State.data.services[0] || "—") : "—") || "—")}</div>
+      </div>
+
+      <div class="review-divider"></div>
+
+      <div class="review-section">
+        <div class="review-title">Hair history</div>
+        ${reviewRow("Last professional color", State.data.lastColor || State.data.lastColorDate || "—")}
+      </div>
+
+      <div class="review-divider"></div>
+
+      <div class="review-section">
+        <div class="review-title">Photos</div>
+        ${reviewRow("Selected", `${countPickedPhotos_()} selected`)}
+      </div>
+    </div>
+
+    <div class="hint" id="reviewHint" aria-live="polite">
+      If anything looks off, tap <b>Back</b> — your answers stay saved.
+    </div>
+
+    <div class="form-error ${State.ui.reviewError ? "" : "hidden"}" id="reviewError" role="alert">
+      ${escapeHtml(State.ui.reviewError || "")}
+    </div>
+
+    <div class="nav">
+      <button class="btn ghost" type="button" onclick="back()">Back</button>
+      <button class="btn primary" type="button" onclick="submitForm()">Submit</button>
+    </div>
+  `;
+
+  setTimeout(() => {
+    const h = document.getElementById("reviewHint");
+    if (h) h.classList.add("show");
+  }, 350);
+
+  return div;
+}
+
+function reviewRow(label, value) {
+  return `
+    <div class="review-row">
+      <div class="review-label">${escapeHtml(label)}</div>
+      <div class="review-value">${escapeHtml(value)}</div>
+    </div>
+  `;
+}
+
+function Loading() {
+  const div = document.createElement("div");
+  div.className = "loading-center";
+
+  const line = State.ui.loadingMode === "submit"
+    ? "Getting things ready…"
+    : (LOADING_QUOTES[0] || "Getting things ready…");
+
+  div.innerHTML = `
+    <h1>Submitting…</h1>
+
+    <div class="loading-stack">
+      <div class="hair-loader" aria-hidden="true"></div>
+      <div class="loading-line muted" id="loadingLine">${escapeHtml(line)}</div>
+    </div>
+
+    <div id="loadingRetryWrap" class="${State.ui.showLoadingRetry ? "" : "hidden"}" style="margin-top:14px; text-align:center;">
+      <div class="muted" id="loadingRetryMsg" style="margin-bottom:10px;">
+        ${escapeHtml(State.ui.loadingRetryMsg || "")}
+      </div>
+      <button class="btn primary" type="button" id="btnLoadingRetry">Try Again</button>
+    </div>
+  `;
+
+  return div;
+}
+
+function bindLoadingInteractions_() {
+  const btn = document.getElementById("btnLoadingRetry");
+  if (!btn) return;
+
+  btn.addEventListener("click", () => {
+    // prevent double taps
+    if (State.ui.submitting) return;
+    submitForm({ fromRetry: true });
+  });
+}
+
+function startLoadingQuotes() {
+  // reset
+  State.ui.loadingQuoteIdx = 0;
+
+  const el = document.getElementById("loadingLine");
+  if (!el) return;
+
+  // set first line immediately
+  el.textContent = LOADING_QUOTES[0] || "Getting things ready…";
+
+  // rotate through each quote ONCE, then stop
+  const maxIdx = ((LOADING_QUOTES && LOADING_QUOTES.length) ? LOADING_QUOTES.length : 1) - 1;
+
+  stopLoadingTimer();
+  State.ui.loadingTimer = setInterval(() => {
+    if (Steps[State.step] !== "loading") {
+      stopLoadingTimer();
+      return;
+    }
+
+    State.ui.loadingQuoteIdx = Math.min(State.ui.loadingQuoteIdx + 1, maxIdx);
+    el.textContent = LOADING_QUOTES[State.ui.loadingQuoteIdx] || el.textContent;
+
+    if (State.ui.loadingQuoteIdx >= maxIdx) {
+      stopLoadingTimer();
+    }
+  }, 2600);
+}
+
+function stopLoadingTimer() {
+  if (State.ui.loadingTimer) {
+    clearInterval(State.ui.loadingTimer);
+    State.ui.loadingTimer = null;
+  }
+}
+
+/* ==============================
+   RENDER HELPERS (STATIC HEADER + SLIDE SWAP)
+============================== */
+
+function ensureAppShell_(app) {
+  if (app.__dmshell) return;
+
+  // wipe once
+  app.innerHTML = "";
+
+  const shell = document.createElement("div");
+  shell.className = "app-shell";
+
+  const header = document.createElement("div");
+  header.className = "app-header";
+  header.innerHTML = `
+    <div class="app-brand">Danielle Marie Hair Co.</div>
+    <div class="app-dynamic muted" id="appDynamicLine"></div>
+  `;
+
+  const progress = document.createElement("div");
+  progress.className = "progress";
+  const fill = document.createElement("div");
+  fill.className = "progress-fill";
+  progress.appendChild(fill);
+
+  const viewport = document.createElement("div");
+  viewport.className = "app-viewport";
+
+  shell.appendChild(header);
+  shell.appendChild(progress);
+  shell.appendChild(viewport);
+  app.appendChild(shell);
+
+  app.__dmshell = {
+    shell,
+    header,
+    progress,
+    progressFill: fill,
+    viewport,
+    dynamicLine: header.querySelector("#appDynamicLine")
+  };
+}
+
+function renderHeader_(app, currentStepName) {
+  const el = app.__dmshell?.dynamicLine;
+  if (!el) return;
+  el.textContent = buildDynamicHeaderLine_(currentStepName);
+}
+
+function buildDynamicHeaderLine_(currentStepName) {
+  const service = (State.data.service || (Array.isArray(State.data.services) ? (State.data.services[0] || "") : "") || "").trim();
+  const name = (State.data.fullName || State.data.name || "").trim();
+
+  switch (currentStepName) {
+    case "splash":   return "Preparing your consultation…";
+    case "welcome":  return "A quick, curated intake.";
+    case "basics":   return "Your details — so we can follow up.";
+    case "services": return service ? `Focused on: ${service}` : "Choose what feels closest.";
+    case "changeSize": return "Dial in the outcome.";
+    case "extras":   return "Optional details to plan well.";
+    case "history":  return "A little context goes a long way.";
+    case "photos":   return "Photos help us plan precisely.";
+    case "review":   return name ? `All set, ${name}. One last look.` : "All set. One last look.";
+    case "loading":  return "Submitting securely…";
+    case "thankyou": return "Received. We’ll review and follow up.";
+    default:         return "";
+  }
+}
+
+function swapScreen_(app, node) {
+  const vp = app.__dmshell?.viewport;
+  if (!vp) return;
+
+  if (!node) { vp.innerHTML = ""; return; }
+
+  if (!vp.__dmSwapInit) {
+    vp.__dmSwapInit = true;
+    vp.style.position = "relative";
+    vp.style.overflow = "hidden";
+    vp.style.width = "100%";
+  }
+
+  const prev = vp.firstElementChild;
+
+  const nextWrap = document.createElement("div");
+  nextWrap.className = "screen";
+  nextWrap.style.width = "100%";
+  nextWrap.style.boxSizing = "border-box";
+  nextWrap.appendChild(node);
+  vp.appendChild(nextWrap);
+
+  if (!prev) return;
+
+  prev.style.position = "absolute";
+  prev.style.inset = "0";
+  prev.style.width = "100%";
+
+  nextWrap.style.position = "absolute";
+  nextWrap.style.inset = "0";
+  nextWrap.style.width = "100%";
+  nextWrap.style.opacity = "0";
+  nextWrap.style.transform = "translateX(10px)";
+
+  const cleanup = () => {
+    if (prev && prev.parentNode === vp) vp.removeChild(prev);
+    nextWrap.style.position = "";
+    nextWrap.style.inset = "";
+    nextWrap.style.transform = "";
+    nextWrap.style.opacity = "";
+  };
 
 
