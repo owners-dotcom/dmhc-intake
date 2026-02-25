@@ -13,5 +13,514 @@ Last updated: YYYY-MM-DD
 - Deployment/version label: PASTE_LABEL_HERE
 
 ## index.html (PROD)
-```html
-PASTE_FULL_INDEX_HTML_HERE
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <title>DMHC Intake</title>
+
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div id="app" role="application" aria-label="Danielle Marie Hair Co. Intake"></div>
+
+    <script src="./app.js" defer></script>
+  </body>
+</html>
+
+
+## styles.css (PROD)
+/* DMHC Intake — FULL styles.css (paste-replace)
+Adds: “liquid glass” animated background + reliable vertical centering + dark mode safety.
+No HTML changes required.
+*/
+
+/* ==============================
+BASE + VARIABLES
+============================== */
+
+:root{
+--bg-1:#eef1ee;
+--bg-2:#e8eeea;
+--ink:#121212;
+--muted:#6a6a6a;
+
+--card:#ffffffcc;         /* translucent for “glass” /
+--card-solid:#ffffff;     / fallback */
+--stroke:rgba(18,18,18,.10);
+
+--brand:#1f5f52;
+--brand-2:#0f3f37;
+
+--radius:26px;
+--shadow:0 18px 55px rgba(0,0,0,.18);
+
+--maxw:520px;
+--pad:22px;
+}
+
+/* Make sizing predictable */
+*{ box-sizing:border-box; }
+html,body{ height:100%; }
+
+body{
+margin:0;
+color:var(--ink);
+font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+background: radial-gradient(1200px 700px at 20% 10%, var(--bg-2), var(--bg-1));
+overflow-x:hidden;
+}
+
+/* ==============================
+“C” BACKGROUND (LIQUID GLASS)
+============================== */
+
+/* Soft drifting blobs */
+body::before{
+content:"";
+position:fixed;
+inset:-20%;
+pointer-events:none;
+z-index:-2;
+
+background:
+radial-gradient(420px 320px at 18% 22%, rgba(31,95,82,.14), transparent 70%),
+radial-gradient(520px 380px at 78% 18%, rgba(31,95,82,.10), transparent 72%),
+radial-gradient(620px 460px at 60% 78%, rgba(17,17,17,.06), transparent 72%),
+radial-gradient(520px 420px at 18% 86%, rgba(31,95,82,.08), transparent 72%);
+filter: blur(26px) saturate(105%);
+transform: translate3d(0,0,0);
+animation: dmLiquidDrift 60s ease-in-out infinite alternate;
+}
+
+/* Fine grain overlay */
+body::after{
+content:"";
+position:fixed;
+inset:0;
+pointer-events:none;
+z-index:-1;
+opacity:.09;
+background-image:
+repeating-linear-gradient(0deg, rgba(0,0,0,.03) 0 1px, rgba(255,255,255,.00) 1px 3px),
+repeating-linear-gradient(90deg, rgba(0,0,0,.02) 0 1px, rgba(255,255,255,.00) 1px 4px);
+mix-blend-mode: multiply;
+}
+
+@keyframes dmLiquidDrift{
+0%   { transform: translate3d(-2%, -1%, 0) scale(1.02); }
+50%  { transform: translate3d( 2%,  2%, 0) scale(1.04); }
+100% { transform: translate3d( 1%, -2%, 0) scale(1.03); }
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce){
+body::before{ animation:none; }
+}
+
+/* ==============================
+APP WRAPPER + CENTERING
+============================== */
+
+#app{
+min-height: 100svh;
+padding: 18px 14px 26px;
+display:flex;
+flex-direction:column;
+align-items:center;
+}
+
+/* progress bar */
+.progress{
+width:min(var(--maxw), 100%);
+height:6px;
+border-radius:999px;
+background: rgba(0,0,0,.07);
+overflow:hidden;
+margin: 10px auto 18px;
+}
+.progress-fill{
+height:100%;
+width:0%;
+border-radius:999px;
+background: linear-gradient(90deg, rgba(31,95,82,.85), rgba(31,95,82,1));
+}
+
+/* screen container */
+.screen{
+width:min(var(--maxw), 100%);
+margin:0 auto;
+display:flex;
+flex:1;
+align-items:flex-start;
+justify-content:flex-start;
+}
+
+/* ✅ Make key screens auto-center vertically without JS changes */
+.screen:has(.center-splash),
+.screen:has(.loading-center){
+align-items:center;
+justify-content:center;
+padding-top: 6svh;
+padding-bottom: 10svh;
+}
+
+/* Optional: if you later add screen.classList.add("centered") */
+.screen.centered{
+align-items:center;
+justify-content:center;
+padding-top: 6svh;
+padding-bottom: 10svh;
+}
+
+/* ==============================
+CARD / SURFACE
+============================== */
+
+.center-splash,
+.loading-center,
+.screen > div{
+width:100%;
+}
+
+/* Primary “glass card” look */
+.screen > div{
+background: var(--card);
+border: 1px solid rgba(255,255,255,.65);
+border-radius: var(--radius);
+box-shadow: var(--shadow);
+backdrop-filter: blur(14px);
+-webkit-backdrop-filter: blur(14px);
+padding: 22px 22px 20px;
+}
+
+/* Keep splash/loading tighter */
+.center-splash,
+.loading-center{
+text-align:center;
+padding: 22px 22px 24px;
+}
+
+@supports not (backdrop-filter: blur(14px)){
+.screen > div{ background: var(--card-solid); }
+}
+
+/* ==============================
+TYPOGRAPHY
+============================== */
+
+h1{
+margin: 0 0 10px;
+font-size: 40px;
+line-height: 1.05;
+letter-spacing: -0.02em;
+}
+p{ margin: 0 0 14px; }
+.muted{ color: var(--muted); }
+
+.splash-title{
+font-weight: 800;
+font-size: 28px;
+margin-top: 14px;
+}
+.splash-sub{
+margin-top: 6px;
+font-size: 16px;
+}
+
+/* ==============================
+FORM FIELDS
+============================== */
+
+.field{ margin: 14px 0; }
+
+.label-row{
+display:flex;
+align-items:center;
+justify-content:space-between;
+margin-bottom: 8px;
+}
+.label{
+font-weight: 650;
+font-size: 14px;
+letter-spacing: .01em;
+}
+.req{ color: rgba(0,0,0,.45); font-weight: 700; }
+.check{
+font-size: 14px;
+opacity: .0;
+transform: translateY(1px);
+transition: opacity .18s ease;
+}
+.check.on{ opacity: .9; }
+
+.input{
+width:100%;
+height: 52px;
+padding: 0 14px;
+font-size: 16px;
+border-radius: 14px;
+border: 1px solid var(--stroke);
+background: rgba(255,255,255,.78);
+outline: none;
+}
+.input:focus{
+border-color: rgba(31,95,82,.45);
+box-shadow: 0 0 0 3px rgba(31,95,82,.10);
+}
+
+/* ==============================
+BUTTONS
+============================== */
+
+.actions,
+.nav{
+display:flex;
+gap: 14px;
+margin-top: 18px;
+}
+
+.btn{
+height: 54px;
+padding: 0 18px;
+border-radius: 999px;
+border: 1px solid rgba(0,0,0,.08);
+background: rgba(255,255,255,.72);
+color: var(--ink);
+font-size: 16px;
+font-weight: 650;
+cursor:pointer;
+flex:1;
+}
+
+.btn.primary{
+border: none;
+background: linear-gradient(180deg, rgba(31,95,82,1), rgba(15,63,55,1));
+color: #fff;
+box-shadow: 0 14px 35px rgba(15,63,55,.25);
+}
+
+.btn.ghost{ background: rgba(255,255,255,.62); }
+
+.btn.disabled,
+.btn:disabled{
+opacity:.55;
+cursor:not-allowed;
+}
+
+/* ==============================
+CARDS (services)
+============================== */
+
+.card-grid{
+display:grid;
+grid-template-columns: 1fr;
+gap: 12px;
+margin-top: 14px;
+}
+
+.card{
+width:100%;
+text-align:left;
+border-radius: 18px;
+border: 1px solid rgba(0,0,0,.08);
+padding: 16px 16px 14px;
+background: rgba(255,255,255,.70);
+cursor:pointer;
+}
+
+.card-title{
+font-weight: 800;
+margin-bottom: 6px;
+font-size: 16px;
+}
+.card-desc{
+color: var(--muted);
+font-size: 14px;
+line-height: 1.25;
+}
+
+/* ==============================
+PHOTOS
+============================== */
+
+.photo-block{
+border-radius: 18px;
+border: 1px solid rgba(0,0,0,.08);
+padding: 14px;
+background: rgba(255,255,255,.64);
+margin-top: 14px;
+}
+.photo-head{
+display:flex;
+align-items:flex-start;
+justify-content:space-between;
+gap: 12px;
+margin-bottom: 10px;
+}
+.photo-title{ font-weight: 800; }
+.photo-meta{ font-size: 13px; }
+
+.file-hidden{ display:none; }
+
+.thumbs{
+display:flex;
+gap: 10px;
+flex-wrap: wrap;
+margin-top: 12px;
+}
+.thumbs img{
+width: 64px;
+height: 64px;
+border-radius: 14px;
+object-fit: cover;
+border: 1px solid rgba(0,0,0,.10);
+}
+
+/* ==============================
+REVIEW
+============================== */
+
+.review-card{
+border-radius: 18px;
+border: 1px solid rgba(0,0,0,.08);
+padding: 14px;
+background: rgba(255,255,255,.64);
+margin-top: 14px;
+}
+.review-title{
+font-weight: 900;
+margin-bottom: 10px;
+}
+.review-row{
+display:flex;
+align-items:flex-start;
+justify-content:space-between;
+gap: 14px;
+padding: 8px 0;
+}
+.review-label{
+color: var(--muted);
+font-size: 13px;
+}
+.review-value{
+font-weight: 650;
+text-align:right;
+max-width: 58%;
+word-break: break-word;
+}
+.review-divider{
+height:1px;
+background: rgba(0,0,0,.08);
+margin: 10px 0;
+}
+.pill{
+display:inline-block;
+padding: 10px 14px;
+border-radius: 999px;
+background: rgba(31,95,82,.10);
+border: 1px solid rgba(31,95,82,.18);
+font-weight: 750;
+}
+
+.hint{
+margin-top: 12px;
+color: var(--muted);
+opacity: 0;
+transform: translateY(4px);
+transition: opacity .22s ease, transform .22s ease;
+}
+.hint.show{
+opacity: 1;
+transform: translateY(0);
+}
+
+.form-error{
+margin-top: 12px;
+padding: 12px 12px;
+border-radius: 14px;
+background: rgba(170,0,0,.06);
+border: 1px solid rgba(170,0,0,.12);
+color: rgba(120,0,0,1);
+font-weight: 650;
+}
+.hidden{ display:none; }
+
+/* ==============================
+LOADER
+============================== */
+
+.hair-loader{
+width: 38px;
+height: 38px;
+border-radius: 999px;
+border: 3px solid rgba(0,0,0,.08);
+border-top-color: rgba(31,95,82,.85);
+margin: 14px auto 10px;
+animation: spin 1.05s linear infinite;
+}
+.hair-loader.big{
+width: 46px;
+height: 46px;
+border-width: 4px;
+}
+
+.loading-stack{ margin-top: 10px; }
+.loading-line{ font-size: 15px; }
+
+@keyframes spin{ to{ transform: rotate(360deg); } }
+
+/* ==============================
+DARK MODE SAFETY (IMPORTANT)
+============================== */
+
+@media (prefers-color-scheme: dark){
+:root{
+--bg-1:#0f1211;
+--bg-2:#101816;
+--ink:#f2f2f2;
+--muted:#b7b7b7;
+
+--card:rgba(18,22,21,.78);  
+--card-solid:#121615;  
+--stroke:rgba(255,255,255,.12);  
+
+--shadow:0 22px 65px rgba(0,0,0,.55);
+
+}
+
+body{
+background: radial-gradient(1200px 700px at 20% 10%, var(--bg-2), var(--bg-1));
+}
+
+body::after{
+opacity:.10;
+mix-blend-mode: screen;
+}
+
+.progress{ background: rgba(255,255,255,.10); }
+.btn{ background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.10); color: var(--ink); }
+.btn.ghost{ background: rgba(255,255,255,.06); }
+.card,
+.photo-block,
+.review-card{ background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.10); }
+.input{ background: rgba(255,255,255,.08); color: var(--ink); }
+.req{ color: rgba(255,255,255,.40); }
+.review-divider{ background: rgba(255,255,255,.10); }
+.pill{ background: rgba(31,95,82,.22); border-color: rgba(31,95,82,.35); }
+.hair-loader{ border-color: rgba(255,255,255,.14); border-top-color: rgba(31,95,82,.95); }
+}
+
+/* ==============================
+SMALL SCREENS
+============================== */
+
+@media (max-width: 420px){
+h1{ font-size: 34px; }
+.btn{ height: 52px; }
+.screen > div{ padding: 20px 18px 18px; }
+}
+
+## app.js (PROD)
