@@ -1,7 +1,7 @@
 # DMHC Intake — Production Baseline Snapshot (LOCKED)
 Do not change this file unless explicitly agreed.
 
-Last updated: YYYY-MM-DD
+Last updated: 2026-02-25
 
 ## Runtime URLs (PROD)
 - GitHub Pages: https://owners-dotcom.github.io/dmhc-intake/
