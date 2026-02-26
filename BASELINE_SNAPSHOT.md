@@ -1,3 +1,16 @@
+# BASELINE_SNAPSHOT — CHECKPOINT ONLY (DO NOT MAINTAIN DAILY)
+
+This file is NOT a mirror of app.js / styles.css / index.html.
+Source of truth is the code files.
+
+Update this snapshot ONLY when a build is intentionally PROMOTED to “stable production truth”for the Intake GPT (checkpoint moment). Otherwise, rely on GitHub commit history.
+
+Last promoted checkpoint: (fill when promoted)
+- Date:
+- Commit:
+- Notes:
+
+
 # DMHC Intake — Production Baseline Snapshot (LOCKED)
 Do not change this file unless explicitly agreed.
 
