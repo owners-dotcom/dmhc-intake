@@ -1,6 +1,6 @@
 # DMHC Intake — Production Baseline Snapshot (LOCKED)
 
-# BASELINE_SNAPSHOT — CHECKPOINT ONLY (DO NOT MAINTAIN DAILY)
+## BASELINE_SNAPSHOT — CHECKPOINT ONLY (DO NOT MAINTAIN DAILY)
 
 This file is NOT a mirror of app.js / styles.css / index.html.
 Source of truth is the code files.
