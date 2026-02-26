@@ -10,7 +10,7 @@ Last updated: 2026-02-25
 - Google Sheet: https://docs.google.com/spreadsheets/d/1HRHBPLig1hKm2pxsT4gdK4gcLMy0ysYZPDUbfy3LxGM/edit
 
 ## Apps Script Deployment Label
-- Deployment/version label: PASTE_LABEL_HERE
+- Deployment/version label: firstGeminiTry (Version 26 on Feb 19, 2026, 8:51 PM)
 
 ## index.html (PROD)
 <!doctype html>
