@@ -1,3 +1,5 @@
+# DMHC Intake — Production Baseline Snapshot (LOCKED)
+
 # BASELINE_SNAPSHOT — CHECKPOINT ONLY (DO NOT MAINTAIN DAILY)
 
 This file is NOT a mirror of app.js / styles.css / index.html.
@@ -10,11 +12,7 @@ Last promoted checkpoint: (fill when promoted)
 - Commit:
 - Notes:
 
-
-# DMHC Intake — Production Baseline Snapshot (LOCKED)
-Do not change this file unless explicitly agreed.
-
-Last updated: 2026-02-25
+Do not change this file unless explicitly agreed. Last updated: 2026-02-25
 
 ## Runtime URLs (PROD)
 - GitHub Pages: https://owners-dotcom.github.io/dmhc-intake/
