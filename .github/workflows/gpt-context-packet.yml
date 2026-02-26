@@ -17,7 +17,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Generate GPT_CONTEXT_PACKET.md
+      - name: Generate GPT_CONTEXT_PACKET.md (robust against ``` in source files)
         shell: bash
         run: |
           set -euo pipefail
@@ -26,6 +26,7 @@ jobs:
           SHA="$(git rev-parse --short HEAD)"
           DATE="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 
+          # Use ~~~~ fences so embedded files can safely contain ``` without breaking the packet
           {
             echo "# DMHC Intake — GPT Context Packet"
             echo ""
@@ -43,9 +44,12 @@ jobs:
               if [ -f "$f" ]; then
                 echo "### ${f}"
                 echo ""
-                echo '```md'
+                echo "~~~~md"
                 cat "$f"
-                echo '```'
+                echo "~~~~"
+                echo ""
+              else
+                echo "### ${f} (missing)"
                 echo ""
               fi
             done
@@ -63,9 +67,9 @@ jobs:
                   *.js)   lang="js" ;;
                   *)      lang="" ;;
                 esac
-                echo "```$lang"
+                echo "~~~~${lang}"
                 cat "$f"
-                echo "```"
+                echo "~~~~"
                 echo ""
               else
                 echo "### ${f} (missing)"
@@ -79,10 +83,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Stage the packet even if it's a brand-new (untracked) file
           git add -A GPT_CONTEXT_PACKET.md
 
-          # If nothing is staged, bail
           if git diff --cached --quiet; then
             echo "No changes to GPT_CONTEXT_PACKET.md"
             exit 0
