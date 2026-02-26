@@ -1,0 +1,92 @@
+name: Build GPT Context Packet
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate GPT_CONTEXT_PACKET.md
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          OUT="GPT_CONTEXT_PACKET.md"
+          SHA="$(git rev-parse --short HEAD)"
+          DATE="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+
+          {
+            echo "# DMHC Intake — GPT Context Packet"
+            echo ""
+            echo "**Generated:** ${DATE}  "
+            echo "**Commit:** ${SHA}"
+            echo ""
+            echo "## Canon / Locks"
+            echo ""
+
+            for f in \
+              "CANON_DMHCI_INTAKE.md" \
+              "INTAKE_SYSTEM_CONTEXT_and_CONTRACT_LOCK_CANON.md" \
+              "BASELINE_SNAPSHOT.md"
+            do
+              if [ -f "$f" ]; then
+                echo "### ${f}"
+                echo ""
+                echo '```md'
+                cat "$f"
+                echo '```'
+                echo ""
+              fi
+            done
+
+            echo "## Runtime Files"
+            echo ""
+
+            for f in "index.html" "styles.css" "app.js"; do
+              if [ -f "$f" ]; then
+                echo "### ${f}"
+                echo ""
+                case "$f" in
+                  *.html) lang="html" ;;
+                  *.css)  lang="css" ;;
+                  *.js)   lang="js" ;;
+                  *)      lang="" ;;
+                esac
+                echo "```$lang"
+                cat "$f"
+                echo "```"
+                echo ""
+              else
+                echo "### ${f} (missing)"
+                echo ""
+              fi
+            done
+          } > "$OUT"
+
+      - name: Commit packet back to repo
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if git diff --quiet -- GPT_CONTEXT_PACKET.md; then
+            echo "No changes to GPT_CONTEXT_PACKET.md"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add GPT_CONTEXT_PACKET.md
+          git commit -m "chore: update GPT context packet"
+          git push
