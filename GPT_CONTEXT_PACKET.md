@@ -1,10 +1,10 @@
 # DMHC Intake — GPT Context Packet
 
-**Generated:** 2026-03-14T21:16:51Z  
-**Commit:** ae119cd
-**Commit Count:** 183
+**Generated:** 2026-03-14T21:19:08Z  
+**Commit:** d85e198
+**Commit Count:** 185
 **Branch:** main
-**Last Commit:** Update CONTRACT_KEYS.md
+**Last Commit:** Update gpt-context-packet.yml
 
 ## Canon / Locks
 
@@ -2268,6 +2268,136 @@ Rules:
    where: Code.gs, appsscript.json 
    notes: backend is now versioned in GitHub and can be bundled into GPT_CONTEXT_PACKET.md
 ~~~~
+
+### PROJECT_STATUS.md
+
+~~~~md
+# DMHC Intake — Project Status
+
+## Current State
+- Active system: Squarespace entry → GitHub Pages SPA → Apps Script → Google Sheet + Drive
+- Source of truth for runtime: `index.html`, `styles.css`, `app.js`, `Code.gs`, `appsscript.json`
+- Source of truth for project rules: `CANON_DMHCI_INTAKE.md`, `PACKET_USAGE_RULES.md`, `FIX_QUEUE.md`, `CONTRACT_KEYS.md`
+- Generated file: `GPT_CONTEXT_PACKET.md` (do not edit directly)
+
+## Current Focus
+- See `CURRENT_FOCUS.md`
+
+## Last Known Priorities
+1. Fix contract / runtime drift before adding new features
+2. Keep packet, canon, frontend, and backend aligned
+3. Preserve locked sheet / endpoint assumptions unless explicitly changed
+
+## Working Rule
+- Only one item should be ACTIVE at a time
+- If a new issue interrupts work, move the old one in `FIX_QUEUE.md` before switching
+
+## Next Step
+- Re-read packet in dev chat
+- Pick one fix item by number
+- Patch only that item~~~~
+
+### CURRENT_FOCUS.md
+
+~~~~md
+# DMHC Intake — Current Focus
+
+## ACTIVE
+- Fix ID:
+- Title:
+- Status: ACTIVE
+
+## Why This Now
+- 
+
+## Done Means
+- 
+- 
+- 
+
+## Exact Next Action
+- 
+
+## If Interrupted
+- Resume this item first unless a new issue is:
+  - blocking submissions
+  - causing contract drift
+  - breaking backend / sheet writes~~~~
+
+### EDIT_MAP.md
+
+~~~~md
+# DMHC Intake — Edit Map
+
+## 1. Frontend UI / flow / copy / validation
+Edit:
+- `app.js`
+- `styles.css`
+- `index.html` only if structure changes
+
+Then update only if needed:
+- `PROJECT_STATUS.md`
+- `CURRENT_FOCUS.md`
+- `FIX_QUEUE.md`
+
+Do not edit:
+- `GPT_CONTEXT_PACKET.md`
+
+---
+
+## 2. Backend logic / validation / row writing / Drive behavior
+Edit:
+- `Code.gs`
+- `appsscript.json` only if manifest settings change
+
+Then update only if needed:
+- `CONTRACT_KEYS.md`
+- `PROJECT_STATUS.md`
+- `CURRENT_FOCUS.md`
+- `FIX_QUEUE.md`
+
+Do not edit:
+- `GPT_CONTEXT_PACKET.md`
+
+---
+
+## 3. Contract / payload / adapter field rules
+Edit:
+- `CONTRACT_KEYS.md`
+
+Then update:
+- `app.js`
+- `Code.gs`
+- `CANON_DMHCI_INTAKE.md`
+- `FIX_QUEUE.md`
+
+Do not edit:
+- `GPT_CONTEXT_PACKET.md`
+
+---
+
+## 4. Workflow / packet / automation
+Edit:
+- `.github/workflows/gpt-context-packet.yml`
+- `PACKET_USAGE_RULES.md`
+
+Then update only if needed:
+- `PROJECT_STATUS.md`
+- `FIX_QUEUE.md`
+
+Do not edit:
+- `GPT_CONTEXT_PACKET.md`
+
+---
+
+## 5. Queue / state / what we are doing now
+Edit:
+- `CURRENT_FOCUS.md`
+- `FIX_QUEUE.md`
+- `PROJECT_STATUS.md`
+
+Do not edit:
+- runtime files unless actual code is changing~~~~
 
 ### CONTRACT_KEYS.md
 
@@ -4869,7 +4999,7 @@ function masterPrune_() {
 
 ### appsscript.json
 
-~~~~js
+~~~~json
 {
   "timeZone": "America/New_York",
   "dependencies": {},
