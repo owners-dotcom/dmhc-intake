@@ -1,6 +1,5 @@
-"How to work with the Intake GPT (no copy/paste)” with 3 bullets:
+How to work with the Intake GPT (no copy/paste)
 
-“Always read BASELINE_SNAPSHOT.md + CANON_DMHCI_INTAKE.md first.”
-
-“When asked to fix something, open the current app.js, styles.css, index.html from the repo.”
-“Output changes as a patch or full function replacement blocks only”
+- Always read GPT_CONTEXT_PACKET.md first.
+- When fixing something, work from the current packet commit/timestamp, not memory.
+- Output changes as a patch or full function replacement blocks only.
