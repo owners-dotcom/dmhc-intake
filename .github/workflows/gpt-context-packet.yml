@@ -38,7 +38,6 @@ jobs:
 
             for f in \
               "CANON_DMHCI_INTAKE.md" \
-              "INTAKE_SYSTEM_CONTEXT_and_CONTRACT_LOCK_CANON.md" \
               "BASELINE_SNAPSHOT.md"
             do
               if [ -f "$f" ]; then
