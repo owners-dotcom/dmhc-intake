@@ -1,10 +1,10 @@
 # DMHC Intake — GPT Context Packet
 
-**Generated:** 2026-03-14T14:03:40Z  
-**Commit:** a4a04f0
-**Commit Count:** 153
+**Generated:** 2026-03-14T14:05:49Z  
+**Commit:** 10493dd
+**Commit Count:** 155
 **Branch:** main
-**Last Commit:** Update gpt-context-packet.yml
+**Last Commit:** Update README.md
 
 ## Canon / Locks
 
