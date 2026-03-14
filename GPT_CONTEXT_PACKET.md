@@ -1,10 +1,10 @@
 # DMHC Intake — GPT Context Packet
 
-**Generated:** 2026-03-14T21:16:11Z  
-**Commit:** 4adef82
-**Commit Count:** 181
+**Generated:** 2026-03-14T21:16:51Z  
+**Commit:** ae119cd
+**Commit Count:** 183
 **Branch:** main
-**Last Commit:** Create EDIT_MAP.md
+**Last Commit:** Update CONTRACT_KEYS.md
 
 ## Canon / Locks
 
@@ -2274,11 +2274,6 @@ Rules:
 ~~~~md
 # DMHC Intake — Contract Keys
 
-This file defines the expected submission contract between:
-- frontend (app.js / DMHCAdapter)
-- backend (Code.gs)
-- sheet / downstream ops
-
 ## Required Keys
 - fullName
 - phone
@@ -2299,15 +2294,14 @@ This file defines the expected submission contract between:
 - userAgent
 - schemaVersion
 - formType
-- riskScore
-- riskTier
 
 ## Rules
-- `services` must be an array
-- `photos` must be an array of objects containing base64
-- additive fields are allowed only if backend accepts them safely
+- `services` must always be an array
+- `photos` must always be an array
+- each photo object must include `base64`
+- additive keys are allowed only if frontend and backend both tolerate them safely
 - silent renames are prohibited
-- legacy aliases must be handled in adapter, not by changing canonical contract keys~~~~
+- legacy aliases must be handled in adapter / backend mapping, not by changing canonical names silently~~~~
 
 ## Runtime Files
 
