@@ -52,7 +52,8 @@ jobs:
               "CANON_DMHCI_INTAKE.md" \
               "BASELINE_SNAPSHOT.md"  \
               "PACKET_USAGE_RULES.md" \
-              "FIX_QUEUE.md"
+              "FIX_QUEUE.md" \
+              "CONTRACT_KEYS.md"
             do
               if [ -f "$f" ]; then
                 echo "### ${f}"
