@@ -1,10 +1,10 @@
 # DMHC Intake — GPT Context Packet
 
-**Generated:** 2026-03-14T21:19:08Z  
-**Commit:** d85e198
-**Commit Count:** 185
+**Generated:** 2026-03-14T22:24:44Z  
+**Commit:** c8e8d86
+**Commit Count:** 187
 **Branch:** main
-**Last Commit:** Update gpt-context-packet.yml
+**Last Commit:** Update app.js
 
 ## Canon / Locks
 
@@ -3077,10 +3077,7 @@ const LOADING_QUOTES = [
   "Still uploading — hang tight…"
 ];
 
-/* ==============================
-   INIT
-============================== */
-
+/* ============================== INIT ============================== */
 document.addEventListener("DOMContentLoaded", () => {
   const stepParam = Number(new URL(window.location.href).searchParams.get("step"));
   if (!Number.isNaN(stepParam)) {
@@ -3089,36 +3086,44 @@ document.addEventListener("DOMContentLoaded", () => {
     State.step = 0;
   }
 
-// Expose functions for inline onclick handlers (required if script is module-scoped)
-Object.assign(window, {
-  next,
-  back,
-  goToStep,
-  submitForm,
-
-  // NEW service flow
-  selectIntent,
-  selectChangeSize,
-  selectHaircut,
-
-  // Legacy safety bridge (prevents old onclick crash if anything lingers)
-  selectService
-});
+  // Expose functions for inline onclick handlers (required if script is module-scoped)
+  Object.assign(window, {
+    next,
+    back,
+    goToStep,
+    submitForm,
+    // NEW service flow
+    selectIntent,
+    selectChangeSize,
+    selectHaircut,
+    // Legacy safety bridge (prevents old onclick crash if anything lingers)
+    selectService
+  });
 
   // Keep browser back/forward inside the flow
   syncHistory(true);
 
   window.addEventListener("popstate", (e) => {
+    const prevStep = State.step;
     const s =
       e.state && typeof e.state.step === "number"
         ? e.state.step
         : Number(new URL(window.location.href).searchParams.get("step") || 0);
 
-    State.step = clamp(s, 0, Steps.length - 1);
-    render();
+    const nextStep = clamp(s, 0, Steps.length - 1);
+    if (nextStep === prevStep) return;
+
+    State.ui._navDir = nextStep > prevStep ? 1 : -1;
+    State.ui.error = "";
+    State.ui.reviewError = "";
+    State.step = nextStep;
+
+    // Canonical render path: never call render() directly from navigation/history events.
+    scheduleRender_();
   });
 
-  render();
+  // Canonical initial boot render path.
+  scheduleRender_();
 });
 
 /* ==============================
@@ -3163,12 +3168,10 @@ function back() {
   goToStep(State.step - 1);
 }
 
-/* ==============================
-   RENDER SCHEDULER (ANTI-FLICKER)
-============================== */
-
+/* ============================== RENDER SCHEDULER (ANTI-FLICKER) ============================== */
 function scheduleRender_() {
   if (State.ui._renderQueued) return;
+
   State.ui._renderQueued = true;
 
   requestAnimationFrame(() => {
