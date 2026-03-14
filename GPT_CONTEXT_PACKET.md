@@ -1,10 +1,10 @@
 # DMHC Intake — GPT Context Packet
 
-**Generated:** 2026-03-14T16:02:07Z  
-**Commit:** 12dd7c8
-**Commit Count:** 173
+**Generated:** 2026-03-14T16:04:27Z  
+**Commit:** f76ab94
+**Commit Count:** 175
 **Branch:** main
-**Last Commit:** Create CONTRACT_KEYS.md
+**Last Commit:** Update gpt-context-packet.yml
 
 ## Canon / Locks
 
@@ -2268,6 +2268,46 @@ Rules:
    where: Code.gs, appsscript.json 
    notes: backend is now versioned in GitHub and can be bundled into GPT_CONTEXT_PACKET.md
 ~~~~
+
+### CONTRACT_KEYS.md
+
+~~~~md
+# DMHC Intake — Contract Keys
+
+This file defines the expected submission contract between:
+- frontend (app.js / DMHCAdapter)
+- backend (Code.gs)
+- sheet / downstream ops
+
+## Required Keys
+- fullName
+- phone
+- email
+- services
+- photos
+
+## Optional Keys
+- preferredStylist
+- goals
+- goal
+- lastColorDate
+- boxDye
+- chemicalServices
+- hairHistory
+- sensitivities
+- submittedFrom
+- userAgent
+- schemaVersion
+- formType
+- riskScore
+- riskTier
+
+## Rules
+- `services` must be an array
+- `photos` must be an array of objects containing base64
+- additive fields are allowed only if backend accepts them safely
+- silent renames are prohibited
+- legacy aliases must be handled in adapter, not by changing canonical contract keys~~~~
 
 ## Runtime Files
 
