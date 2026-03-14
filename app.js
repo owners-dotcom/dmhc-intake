@@ -998,26 +998,6 @@ function swapScreen_(container, nextNode) {
   nextNode.addEventListener("transitionend", cleanup, { once: true });
 }
 
-  try {
-    const inAnim = nextWrap.animate(
-      [{ opacity: 0, transform: "translateX(10px)" }, { opacity: 1, transform: "translateX(0px)" }],
-      { duration: 200, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)", fill: "forwards" }
-    );
-
-    prev.animate(
-      [{ opacity: 1 }, { opacity: 0 }],
-      { duration: 160, easing: "ease", fill: "forwards" }
-    );
-
-    inAnim.onfinish = cleanup;
-    setTimeout(cleanup, 260);
-
-  } catch (e) {
-    cleanup();
-  }
-
-}
-
 /* ==============================
    ADAPTER + CANON SUBMISSION
 ============================== */
