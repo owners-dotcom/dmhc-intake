@@ -1,7 +1,7 @@
 # DMHC Intake — GPT Context Packet
 
-**Generated:** 2026-03-14T12:13:49Z  
-**Commit:** f31e75d
+**Generated:** 2026-03-14T12:38:17Z  
+**Commit:** 180e5da
 
 ## Canon / Locks
 
@@ -156,8 +156,6 @@ Frontend intentionally enforces a stricter cap than backend for speed, reliabili
 - Confirm no console errors
 - Confirm no booking language anywhere
 - Confirm packet, canon, and runtime all reference the same endpoint~~~~
-
-### INTAKE_SYSTEM_CONTEXT_and_CONTRACT_LOCK_CANON.md (missing)
 
 ### BASELINE_SNAPSHOT.md
 
