@@ -1041,6 +1041,7 @@ function swapScreen_(container, nextNode) {
   nextNode.classList.add("screen");
 
   if (!current) {
+    nextNode.classList.add("screen-active");
     container.appendChild(nextNode);
     return;
   }
@@ -1048,27 +1049,49 @@ function swapScreen_(container, nextNode) {
   const exitClass = dir === 1 ? "screen-exit-left" : "screen-exit-right";
   const enterClass = dir === 1 ? "screen-enter-right" : "screen-enter-left";
 
-  nextNode.classList.add(enterClass);
-  container.appendChild(nextNode);
-
-  // Force layout so the browser registers the starting state
-  nextNode.offsetHeight;
-
-  requestAnimationFrame(() => {
-    nextNode.classList.remove(enterClass);
-    nextNode.classList.add("screen-active");
-
-    current.classList.add(exitClass);
-  });
+  let cleaned = false;
+  let fallbackId = null;
 
   const cleanup = () => {
+    if (cleaned) return;
+    cleaned = true;
+
+    if (fallbackId) clearTimeout(fallbackId);
+
+    nextNode.removeEventListener("transitionend", onDone);
+
     if (current && current.parentNode === container) {
       container.removeChild(current);
     }
-    nextNode.removeEventListener("transitionend", cleanup);
+
+    nextNode.classList.remove("screen-enter-right", "screen-enter-left");
+    nextNode.classList.add("screen-active");
   };
 
-  nextNode.addEventListener("transitionend", cleanup, { once: true });
+  const onDone = (e) => {
+    if (e && e.target !== nextNode) return;
+    cleanup();
+  };
+
+  // Deactivate old screen immediately so it does not keep layout authority.
+  current.classList.remove("screen-active");
+  current.classList.add(exitClass);
+
+  nextNode.classList.add(enterClass);
+  container.appendChild(nextNode);
+
+  // Force layout so the browser commits the starting state.
+  void nextNode.offsetHeight;
+
+  requestAnimationFrame(() => {
+    nextNode.classList.add("screen-active");
+    nextNode.classList.remove(enterClass);
+  });
+
+  nextNode.addEventListener("transitionend", onDone);
+
+  // Fallback cleanup in case transitionend never fires.
+  fallbackId = setTimeout(cleanup, 320);
 }
 
 /* ==============================
