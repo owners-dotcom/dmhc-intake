@@ -3,6 +3,8 @@ name: Build GPT Context Packet
 on:
   push:
     branches: ["main"]
+    paths-ignore:
+      - "GPT_CONTEXT_PACKET.md"
   workflow_dispatch:
 
 permissions:
