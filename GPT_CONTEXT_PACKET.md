@@ -1,10 +1,10 @@
 # DMHC Intake — GPT Context Packet
 
-**Generated:** 2026-03-14T15:53:49Z  
-**Commit:** 9dfc81d
-**Commit Count:** 169
+**Generated:** 2026-03-14T15:56:33Z  
+**Commit:** 5208a3e
+**Commit Count:** 171
 **Branch:** main
-**Last Commit:** Add Code.gs and appsscript.json to runtime files list
+**Last Commit:** Add Apps Script backend and update packet metadata
 
 ## Canon / Locks
 
@@ -2262,7 +2262,12 @@ Rules:
 
 3. Add packet metadata for sync safety
    where: .github/workflows/gpt-context-packet.yml
-   notes: packet now prints Generated, Commit, Commit Count, Branch, Last Commit~~~~
+   notes: packet now prints Generated, Commit, Commit Count, Branch, Last Commit
+
+4. Add Apps Script backend to repo 
+   where: Code.gs, appsscript.json 
+   notes: backend is now versioned in GitHub and can be bundled into GPT_CONTEXT_PACKET.md
+~~~~
 
 ## Runtime Files
 
