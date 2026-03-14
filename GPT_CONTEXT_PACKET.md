@@ -1,7 +1,7 @@
 # DMHC Intake — GPT Context Packet
 
-**Generated:** 2026-03-14T12:11:41Z  
-**Commit:** 4f1c11e
+**Generated:** 2026-03-14T12:13:49Z  
+**Commit:** f31e75d
 
 ## Canon / Locks
 
