@@ -50,9 +50,12 @@ jobs:
 
             for f in \
               "CANON_DMHCI_INTAKE.md" \
-              "BASELINE_SNAPSHOT.md"  \
+              "BASELINE_SNAPSHOT.md" \
               "PACKET_USAGE_RULES.md" \
               "FIX_QUEUE.md" \
+              "PROJECT_STATUS.md" \
+              "CURRENT_FOCUS.md" \
+              "EDIT_MAP.md" \
               "CONTRACT_KEYS.md"
             do
               if [ -f "$f" ]; then
@@ -80,7 +83,8 @@ jobs:
                   *.css)  lang="css" ;;
                   *.js)   lang="js" ;;
                   *.gs)   lang="js" ;;
-                  *.json)   lang="js" ;;
+                  *.json) lang="json" ;;
+                  *.md)   lang="md" ;;
                   *)      lang="" ;;
                 esac
                 echo "~~~~${lang}"
