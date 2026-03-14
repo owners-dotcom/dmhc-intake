@@ -1,8 +1,8 @@
 # DMHC Intake — GPT Context Packet
 
-**Generated:** 2026-03-14T22:54:03Z  
-**Commit:** 1427cd7
-**Commit Count:** 193
+**Generated:** 2026-03-14T23:11:16Z  
+**Commit:** cb04738
+**Commit Count:** 195
 **Branch:** main
 **Last Commit:** Update app.js
 
@@ -2960,6 +2960,79 @@ console.log("DMHC Modular Intake Loaded");
 const APPS_SCRIPT_URL =
   "https://script.google.com/macros/s/AKfycbwQ9jmUDlTS46nRr0aNtC6wFIoSzl-6QnLg-rjwo06nnom_NEcaiTthBQ3zQ9GJ5sAI/exec";
 
+const CONTRACT_TRUTH = Object.freeze({
+  endpoint:
+    "https://script.google.com/macros/s/AKfycbwQ9jmUDlTS46nRr0aNtC6wFIoSzl-6QnLg-rjwo06nnom_NEcaiTthBQ3zQ9GJ5sAI/exec",
+  required: ["fullName", "phone", "email", "services", "photos"],
+  optional: [
+    "preferredStylist",
+    "goals",
+    "goal",
+    "lastColorDate",
+    "boxDye",
+    "chemicalServices",
+    "hairHistory",
+    "sensitivities",
+    "submittedFrom",
+    "userAgent",
+    "schemaVersion",
+    "formType"
+  ]
+});
+
+function verifyContractAlignment_(payload) {
+  const warnings = [];
+
+  if (String(APPS_SCRIPT_URL || "").trim() !== CONTRACT_TRUTH.endpoint) {
+    warnings.push({
+      type: "endpoint_mismatch",
+      expected: CONTRACT_TRUTH.endpoint,
+      actual: APPS_SCRIPT_URL
+    });
+  }
+
+  for (const key of CONTRACT_TRUTH.required) {
+    if (!(key in payload)) {
+      warnings.push({ type: "missing_required_key", key });
+      continue;
+    }
+
+    if (key === "services" && !Array.isArray(payload.services)) {
+      warnings.push({
+        type: "invalid_required_shape",
+        key: "services",
+        expected: "array",
+        actual: typeof payload.services
+      });
+    }
+
+    if (key === "photos" && !Array.isArray(payload.photos)) {
+      warnings.push({
+        type: "invalid_required_shape",
+        key: "photos",
+        expected: "array",
+        actual: typeof payload.photos
+      });
+    }
+  }
+
+  const allowed = new Set([...CONTRACT_TRUTH.required, ...CONTRACT_TRUTH.optional]);
+
+  for (const key of Object.keys(payload)) {
+    if (!allowed.has(key)) {
+      warnings.push({ type: "tolerated_extra_key", key });
+    }
+  }
+
+  if (warnings.length) {
+    console.groupCollapsed("[DMHC Intake] Contract alignment warnings");
+    warnings.forEach((w) => console.warn(w));
+    console.groupEnd();
+  }
+
+  return warnings;
+}
+
 // Photo compression defaults (safe for Apps Script limits)
 const MAX_EDGE_PX = 1400;      // lowered slightly
 const JPEG_QUALITY = 0.74;     // lowered slightly
@@ -4151,8 +4224,8 @@ async function submitForm(opts = {}) {
   }
 
   if (State.ui.submitting) return;
-  State.ui.submitting = true;
 
+  State.ui.submitting = true;
   State.ui.loadingMode = "submit";
   State.ui.showLoadingRetry = false;
   State.ui.loadingRetryMsg = "";
@@ -4161,8 +4234,8 @@ async function submitForm(opts = {}) {
 
   try {
     const picked = normalizeToFileList_(getSelectedFiles_()).slice(0, MAX_TOTAL_PHOTOS);
-
     const photos = [];
+
     for (let i = 0; i < picked.length; i++) {
       setLoadingLine_(`Optimizing photo ${i + 1} of ${picked.length}…`);
       const f = picked[i];
@@ -4187,20 +4260,22 @@ async function submitForm(opts = {}) {
 
     payload.photos = photos;
 
+    // Non-blocking contract / endpoint drift check
+    verifyContractAlignment_(payload);
+
     // -------------------------
     // Risk Inference (non-breaking additions)
     // -------------------------
     const riskScore = computeRiskScore_();
     const riskTier = getRiskTier_(riskScore);
 
-    payload.riskScore = riskScore;                 // OPTIONAL (safe)
-    payload.riskTier = riskTier;                   // OPTIONAL (safe)
-    payload.schemaVersion = SCHEMA_VERSION;        // OPTIONAL (safe)
+    payload.riskScore = riskScore; // OPTIONAL (safe)
+    payload.riskTier = riskTier; // OPTIONAL (safe)
+    payload.schemaVersion = SCHEMA_VERSION; // OPTIONAL (safe)
     payload.submittedFrom = String(window.location.href || "web-intake");
     payload.userAgent = String(navigator.userAgent || "unknown");
 
     // -------------------------
-
     setLoadingLine_("Sending securely…");
 
     const controller = new AbortController();
@@ -4232,20 +4307,25 @@ async function submitForm(opts = {}) {
 
     const msg = out && out.message
       ? String(out.message)
-      : "We didn’t get a clean confirmation. Tap Try Again once.";
+      : "We didn’t get a clean confirmation. Please try again.";
 
-    showLoadingRetry_(msg);
-
+    State.ui.loadingMode = "quotes";
+    State.ui.showLoadingRetry = true;
+    State.ui.loadingRetryMsg = msg;
+    scheduleRender_();
   } catch (err) {
     State.ui.submitting = false;
+    State.ui.loadingMode = "quotes";
+    State.ui.showLoadingRetry = true;
 
     if (err && err.name === "AbortError") {
-      showLoadingRetry_("Still working on it — mobile uploads can be slow. Tap Try Again once.");
-      return;
+      State.ui.loadingRetryMsg = "This took too long on the current connection. Please try again.";
+    } else {
+      State.ui.loadingRetryMsg = "Something interrupted the submission. Please try again.";
     }
 
-    goToStep(Steps.indexOf("review"));
-    setReviewError_("Something hiccuped on our side. Please tap Submit again.");
+    console.error("[DMHC Intake] submitForm failed", err);
+    scheduleRender_();
   }
 }
 
