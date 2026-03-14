@@ -26,6 +26,7 @@ jobs:
           SHA="$(git rev-parse --short HEAD)"
           COUNT="$(git rev-list --count HEAD)"
           MSG="$(git log -1 --pretty=%s)"
+          BRANCH="$(git rev-parse --abbrev-ref HEAD)"
           DATE="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 
           # Use ~~~~ fences so embedded files can safely contain ``` without breaking the packet
@@ -35,6 +36,7 @@ jobs:
             echo "**Generated:** ${DATE}  "
             echo "**Commit:** ${SHA}"
             echo "**Commit Count:** ${COUNT}"
+            echo "**Branch:** ${BRANCH}"
             echo "**Last Commit:** ${MSG}"
             echo ""
             echo "## Canon / Locks"
