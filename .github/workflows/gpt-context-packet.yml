@@ -33,6 +33,7 @@ jobs:
             echo ""
             echo "**Generated:** ${DATE}  "
             echo "**Commit:** ${SHA}"
+            echo "**Commit Count:** ${COUNT}"
             echo ""
             echo "## Canon / Locks"
             echo ""
