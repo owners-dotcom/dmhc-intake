@@ -1,10 +1,10 @@
 # DMHC Intake — GPT Context Packet
 
-**Generated:** 2026-03-14T15:56:33Z  
-**Commit:** 5208a3e
-**Commit Count:** 171
+**Generated:** 2026-03-14T16:02:07Z  
+**Commit:** 12dd7c8
+**Commit Count:** 173
 **Branch:** main
-**Last Commit:** Add Apps Script backend and update packet metadata
+**Last Commit:** Create CONTRACT_KEYS.md
 
 ## Canon / Locks
 
