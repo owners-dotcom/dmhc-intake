@@ -50,3 +50,7 @@ Rules:
 3. Add packet metadata for sync safety
    where: .github/workflows/gpt-context-packet.yml
    notes: packet now prints Generated, Commit, Commit Count, Branch, Last Commit
+
+4. Add Apps Script backend to repo 
+   where: Code.gs, appsscript.json 
+   notes: backend is now versioned in GitHub and can be bundled into GPT_CONTEXT_PACKET.md
