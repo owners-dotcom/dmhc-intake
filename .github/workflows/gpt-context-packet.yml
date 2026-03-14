@@ -70,7 +70,7 @@ jobs:
             echo "## Runtime Files"
             echo ""
 
-            for f in "index.html" "styles.css" "app.js"; do
+            for f in "index.html" "styles.css" "app.js" "Code.gs" "appsscript.json"; do
               if [ -f "$f" ]; then
                 echo "### ${f}"
                 echo ""
@@ -78,6 +78,8 @@ jobs:
                   *.html) lang="html" ;;
                   *.css)  lang="css" ;;
                   *.js)   lang="js" ;;
+                  *.gs)   lang="js" ;;
+                  *.json)   lang="js" ;;
                   *)      lang="" ;;
                 esac
                 echo "~~~~${lang}"
