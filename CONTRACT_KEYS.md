@@ -1,10 +1,5 @@
 # DMHC Intake — Contract Keys
 
-This file defines the expected submission contract between:
-- frontend (app.js / DMHCAdapter)
-- backend (Code.gs)
-- sheet / downstream ops
-
 ## Required Keys
 - fullName
 - phone
@@ -25,12 +20,11 @@ This file defines the expected submission contract between:
 - userAgent
 - schemaVersion
 - formType
-- riskScore
-- riskTier
 
 ## Rules
-- `services` must be an array
-- `photos` must be an array of objects containing base64
-- additive fields are allowed only if backend accepts them safely
+- `services` must always be an array
+- `photos` must always be an array
+- each photo object must include `base64`
+- additive keys are allowed only if frontend and backend both tolerate them safely
 - silent renames are prohibited
-- legacy aliases must be handled in adapter, not by changing canonical contract keys
+- legacy aliases must be handled in adapter / backend mapping, not by changing canonical names silently
