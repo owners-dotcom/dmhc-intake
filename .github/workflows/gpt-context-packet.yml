@@ -50,7 +50,8 @@ jobs:
 
             for f in \
               "CANON_DMHCI_INTAKE.md" \
-              "BASELINE_SNAPSHOT.md"
+              "BASELINE_SNAPSHOT.md" \
+              "FIX_QUEUE.md"
             do
               if [ -f "$f" ]; then
                 echo "### ${f}"
