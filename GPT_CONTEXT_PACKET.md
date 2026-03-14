@@ -1,8 +1,8 @@
 # DMHC Intake — GPT Context Packet
 
-**Generated:** 2026-03-14T22:24:44Z  
-**Commit:** c8e8d86
-**Commit Count:** 187
+**Generated:** 2026-03-14T22:36:17Z  
+**Commit:** 16a797f
+**Commit Count:** 189
 **Branch:** main
 **Last Commit:** Update app.js
 
@@ -3913,47 +3913,43 @@ function buildDynamicHeaderLine_(currentStepName) {
   }
 }
 
-function swapScreen_(app, node) {
-  const vp = app.__dmshell?.viewport;
-  if (!vp) return;
+/* ============================== SCREEN SWAP ============================== */
+function swapScreen_(container, nextNode) {
+  const current = container.firstElementChild;
+  const dir = State.ui._navDir || 1;
 
-  if (!node) { vp.innerHTML = ""; return; }
+  nextNode.classList.add("screen");
 
-  if (!vp.__dmSwapInit) {
-    vp.__dmSwapInit = true;
-    vp.style.position = "relative";
-    vp.style.overflow = "hidden";
-    vp.style.width = "100%";
+  if (!current) {
+    container.appendChild(nextNode);
+    return;
   }
 
-  const prev = vp.firstElementChild;
+  const exitClass = dir === 1 ? "screen-exit-left" : "screen-exit-right";
+  const enterClass = dir === 1 ? "screen-enter-right" : "screen-enter-left";
 
-  const nextWrap = document.createElement("div");
-  nextWrap.className = "screen";
-  nextWrap.style.width = "100%";
-  nextWrap.style.boxSizing = "border-box";
-  nextWrap.appendChild(node);
-  vp.appendChild(nextWrap);
+  nextNode.classList.add(enterClass);
+  container.appendChild(nextNode);
 
-  if (!prev) return;
+  // Force layout so the browser registers the starting state
+  nextNode.offsetHeight;
 
-  prev.style.position = "absolute";
-  prev.style.inset = "0";
-  prev.style.width = "100%";
+  requestAnimationFrame(() => {
+    nextNode.classList.remove(enterClass);
+    nextNode.classList.add("screen-active");
 
-  nextWrap.style.position = "absolute";
-  nextWrap.style.inset = "0";
-  nextWrap.style.width = "100%";
-  nextWrap.style.opacity = "0";
-  nextWrap.style.transform = "translateX(10px)";
+    current.classList.add(exitClass);
+  });
 
   const cleanup = () => {
-    if (prev && prev.parentNode === vp) vp.removeChild(prev);
-    nextWrap.style.position = "";
-    nextWrap.style.inset = "";
-    nextWrap.style.transform = "";
-    nextWrap.style.opacity = "";
+    if (current && current.parentNode === container) {
+      container.removeChild(current);
+    }
+    nextNode.removeEventListener("transitionend", cleanup);
   };
+
+  nextNode.addEventListener("transitionend", cleanup, { once: true });
+}
 
   try {
     const inAnim = nextWrap.animate(
