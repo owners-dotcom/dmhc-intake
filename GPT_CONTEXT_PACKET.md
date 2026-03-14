@@ -1,8 +1,8 @@
 # DMHC Intake — GPT Context Packet
 
-**Generated:** 2026-03-14T22:39:23Z  
-**Commit:** a70f8d2
-**Commit Count:** 191
+**Generated:** 2026-03-14T22:54:03Z  
+**Commit:** 1427cd7
+**Commit Count:** 193
 **Branch:** main
 **Last Commit:** Update app.js
 
@@ -3957,77 +3957,97 @@ function swapScreen_(container, nextNode) {
 
 const DMHCAdapter = (() => {
   const CANON_KEYS = [
+    // tolerated existing keys
     "company",
+
+    // locked required keys
     "fullName",
     "phone",
     "email",
-    "preferredStylist",
     "services",
+    "photos",
+
+    // locked optional keys
+    "preferredStylist",
     "goals",
+    "goal",
     "lastColorDate",
     "boxDye",
     "chemicalServices",
+    "hairHistory",
     "sensitivities",
-    "hairLength",
-    "maintenanceFrequency",
-    "referralSource",
     "submittedFrom",
     "userAgent",
-    "photos"
+    "schemaVersion",
+    "formType",
+
+    // tolerated existing additive keys
+    "hairLength",
+    "maintenanceFrequency",
+    "referralSource"
   ];
 
   function buildPayload(d) {
-    // 1) Required identity fields (with fallback to avoid false missing-name errors)
+    // 1) Required identity fields
     const fullName = pickString(d, ["fullName", "name"]) || "";
     const phone = pickString(d, ["phone"]) || "";
     const email = pickString(d, ["email"]) || "";
 
-    // 2) Optional fields (stable keys)
+    // 2) Existing tolerated keys
     const company = pickString(d, ["company"]) || ""; // honeypot
     const preferredStylist = pickString(d, ["preferredStylist", "preferred_stylist"]) || "";
 
-    // 3) services MUST be array (support array or string)
+    // 3) services MUST be array
     const services = normalizeServices_(d);
 
+    // 4) Locked optional packet keys
     const goals = pickString(d, ["goals", "goal"]) || "";
-    const lastColorDate =
-      pickString(d, ["lastColorDate"]) ||
-      pickString(d, ["lastColor"]) ||
-      "";
+    const goal = goals;
+    const lastColorDate = pickString(d, ["lastColorDate", "lastColor"]) || "";
     const boxDye = pickString(d, ["boxDye", "box_dye"]) || "";
     const chemicalServices = pickString(d, ["chemicalServices", "chemical_services"]) || "";
+    const hairHistory = pickString(d, ["hairHistory", "history", "hair_history"]) || "";
     const sensitivities = pickString(d, ["sensitivities"]) || "";
-
-    // New optional keys (safe; backend will auto-add columns)
-    const hairLength = pickString(d, ["hairLength", "hair_length"]) || "";
-    const maintenanceFrequency = pickString(d, ["maintenanceFrequency", "maintenance_frequency", "visitFrequency"]) || "";
-    const referralSource = pickString(d, ["referralSource", "referral_source", "referral", "howDidYouHear"]) || "";
-
     const submittedFrom = String(window.location.href || "");
     const userAgent = String(navigator.userAgent || "");
+    const schemaVersion = pickString(d, ["schemaVersion"]) || "";
+    const formType = pickString(d, ["formType", "form_type"]) || "";
 
-    // Photos are built separately and assigned by submitForm() after compression
+    // 5) Existing tolerated additive keys
+    const hairLength = pickString(d, ["hairLength", "hair_length"]) || "";
+    const maintenanceFrequency =
+      pickString(d, ["maintenanceFrequency", "maintenance_frequency", "visitFrequency"]) || "";
+    const referralSource =
+      pickString(d, ["referralSource", "referral_source", "referral", "howDidYouHear"]) || "";
+
+    // Photos are assigned later by submitForm()
     const payload = {
       company,
       fullName,
       phone,
       email,
-      preferredStylist,
       services,
+      photos: [],
+
+      preferredStylist,
       goals,
+      goal,
       lastColorDate,
       boxDye,
       chemicalServices,
+      hairHistory,
       sensitivities,
-      hairLength,
-      maintenanceFrequency,
-      referralSource,
       submittedFrom,
       userAgent,
-      photos: []
+      schemaVersion,
+      formType,
+
+      hairLength,
+      maintenanceFrequency,
+      referralSource
     };
-    
-    // Ensure only canon keys exist (contract hygiene)
+
+    // Contract hygiene: emit only the approved/tolerated adapter keys above
     const clean = {};
     for (const k of CANON_KEYS) clean[k] = payload[k];
     return clean;
@@ -4035,18 +4055,22 @@ const DMHCAdapter = (() => {
 
   function normalizeServices_(d) {
     const raw = d && typeof d === "object" ? d.services : null;
+
     if (Array.isArray(raw)) {
       return raw.map(x => String(x || "").trim()).filter(Boolean);
     }
+
     if (typeof raw === "string" && raw.trim()) {
       return [raw.trim()];
     }
+
     const single = pickString(d, ["service"]) || "";
     return single ? [String(single).trim()] : [];
   }
 
   function pickString(obj, keys) {
     if (!obj || typeof obj !== "object") return "";
+
     for (const k of keys) {
       if (Object.prototype.hasOwnProperty.call(obj, k)) {
         const v = obj[k];
@@ -4055,6 +4079,7 @@ const DMHCAdapter = (() => {
         return String(v).trim();
       }
     }
+
     return "";
   }
 
