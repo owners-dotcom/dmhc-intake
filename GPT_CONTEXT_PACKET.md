@@ -1,8 +1,8 @@
 # DMHC Intake — GPT Context Packet
 
-**Generated:** 2026-03-14T23:11:16Z  
-**Commit:** cb04738
-**Commit Count:** 195
+**Generated:** 2026-03-14T23:26:10Z  
+**Commit:** 51c8107
+**Commit Count:** 197
 **Branch:** main
 **Last Commit:** Update app.js
 
@@ -4237,16 +4237,33 @@ async function submitForm(opts = {}) {
     const photos = [];
 
     for (let i = 0; i < picked.length; i++) {
-      setLoadingLine_(`Optimizing photo ${i + 1} of ${picked.length}…`);
-      const f = picked[i];
-      const base64 = await compressToJpegBase64_(f, MAX_EDGE_PX, JPEG_QUALITY);
+  setLoadingLine_(`Optimizing photo ${i + 1} of ${picked.length}…`);
 
-      photos.push({
-        originalName: f.name || "upload.jpg",
-        mime: "image/jpeg",
-        base64
-      });
-    }
+  const f = picked[i];
+  const base64 = await compressToJpegBase64_(f, MAX_EDGE_PX, JPEG_QUALITY);
+
+  if (typeof base64 === "string" && base64.trim().length > 50) {
+    photos.push({
+      originalName: f.name || "upload.jpg",
+      mime: "image/jpeg",
+      base64: base64.trim()
+    });
+  } else {
+    console.warn("[DMHC Intake] Skipping invalid compressed photo", {
+      name: f && f.name ? f.name : "unknown"
+    });
+  }
+}
+
+if (photos.length < MIN_CURRENT_PHOTOS) {
+  State.ui.submitting = false;
+  State.ui.loadingMode = "quotes";
+  State.ui.showLoadingRetry = true;
+  State.ui.loadingRetryMsg =
+    "We couldn’t prepare your photo upload correctly. Please try again with the same or smaller images.";
+  scheduleRender_();
+  return;
+}
 
     // -------------------------
     // Build payload (LOCKED CONTRACT SAFE)
