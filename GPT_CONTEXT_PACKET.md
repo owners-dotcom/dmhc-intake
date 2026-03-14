@@ -1,10 +1,10 @@
 # DMHC Intake — GPT Context Packet
 
-**Generated:** 2026-03-14T14:13:32Z  
-**Commit:** 7b565ed
-**Commit Count:** 157
+**Generated:** 2026-03-14T14:17:53Z  
+**Commit:** 11f7d1d
+**Commit Count:** 159
 **Branch:** main
-**Last Commit:** Create FIX_QUEUE.md
+**Last Commit:** Update gpt-context-packet.yml
 
 ## Canon / Locks
 
@@ -2172,6 +2172,40 @@ function escapeAttr(str) {
 }
 
 ~~~~
+
+### FIX_QUEUE.md
+
+~~~~md
+# DMHC Intake — Fix Queue
+
+This file tracks active development tasks.
+
+Status types:
+OPEN
+IN_PROGRESS
+BLOCKED
+DONE
+
+---
+
+## OPEN
+
+1. Example issue title
+   description:
+   where:
+   notes:
+
+---
+
+## IN_PROGRESS
+
+---
+
+## BLOCKED
+
+---
+
+## DONE~~~~
 
 ## Runtime Files
 
