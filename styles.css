@@ -487,3 +487,25 @@ p{ margin: 0 0 14px; }
   .btn{ height: 52px; }
   .screen > div{ padding: 20px 18px 18px; }
 }
+
+/* ==============================
+   SCREEN STACK SYSTEM
+   ============================== */
+
+#app {
+  position: relative;
+}
+
+.screen {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.screen-active {
+  position: relative;
+  opacity: 1;
+  pointer-events: auto;
+}
