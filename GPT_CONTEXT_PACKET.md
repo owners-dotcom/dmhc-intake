@@ -1,8 +1,8 @@
 # DMHC Intake — GPT Context Packet
 
-**Generated:** 2026-03-15T00:36:56Z  
-**Commit:** 746ae5c
-**Commit Count:** 203
+**Generated:** 2026-03-15T00:48:49Z  
+**Commit:** 91e2603
+**Commit Count:** 205
 **Branch:** main
 **Last Commit:** Update styles.css
 
@@ -2986,6 +2986,48 @@ p{ margin: 0 0 14px; }
   position: relative;
   opacity: 1;
   pointer-events: auto;
+}
+
+/* ==============================
+   SCREEN STACK OVERRIDE
+   ============================== */
+
+#app {
+  position: relative;
+  overflow: hidden;
+  min-height: 100svh;
+}
+
+.screen {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  max-width: 100%;
+  min-height: 100%;
+  opacity: 0;
+  pointer-events: none;
+  display: grid;
+  place-items: start center;
+  overflow: hidden;
+}
+
+.screen-active {
+  position: relative;
+  inset: auto;
+  opacity: 1;
+  pointer-events: auto;
+  width: 100%;
+  max-width: 100%;
+  min-height: 100%;
+  display: grid;
+  place-items: start center;
+}
+
+.screen-enter-right,
+.screen-enter-left,
+.screen-exit-right,
+.screen-exit-left {
+  will-change: transform, opacity;
 }~~~~
 
 ### app.js
