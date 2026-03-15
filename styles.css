@@ -509,3 +509,21 @@ p{ margin: 0 0 14px; }
   opacity: 1;
   pointer-events: auto;
 }
+
+.screen {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.screen-active {
+  position: relative;
+  opacity: 1;
+  pointer-events: auto;
+}
