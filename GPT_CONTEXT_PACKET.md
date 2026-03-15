@@ -1,8 +1,8 @@
 # DMHC Intake — GPT Context Packet
 
-**Generated:** 2026-03-15T00:16:13Z  
-**Commit:** 0133797
-**Commit Count:** 201
+**Generated:** 2026-03-15T00:36:56Z  
+**Commit:** 746ae5c
+**Commit Count:** 203
 **Branch:** main
 **Last Commit:** Update styles.css
 
@@ -2960,6 +2960,24 @@ p{ margin: 0 0 14px; }
   position: absolute;
   inset: 0;
   width: 100%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.screen-active {
+  position: relative;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.screen {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   opacity: 0;
   pointer-events: none;
 }
