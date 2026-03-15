@@ -1,10 +1,10 @@
 # DMHC Intake — GPT Context Packet
 
-**Generated:** 2026-03-14T23:42:49Z  
-**Commit:** 4fef368
-**Commit Count:** 199
+**Generated:** 2026-03-15T00:16:13Z  
+**Commit:** 0133797
+**Commit Count:** 201
 **Branch:** main
-**Last Commit:** Update app.js
+**Last Commit:** Update styles.css
 
 ## Canon / Locks
 
@@ -2946,6 +2946,28 @@ p{ margin: 0 0 14px; }
   h1{ font-size: 34px; }
   .btn{ height: 52px; }
   .screen > div{ padding: 20px 18px 18px; }
+}
+
+/* ==============================
+   SCREEN STACK SYSTEM
+   ============================== */
+
+#app {
+  position: relative;
+}
+
+.screen {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.screen-active {
+  position: relative;
+  opacity: 1;
+  pointer-events: auto;
 }~~~~
 
 ### app.js
